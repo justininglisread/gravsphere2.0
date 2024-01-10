@@ -26,9 +26,9 @@ def lnprior_set_single(theta,n_betpars,bet0min,bet0max,\
                        logbetr0min,logbetr0max,betnmin,betnmax,\
                        nu_components,nupars_min,nupars_max,\
                        n_mpars,logM200low,logM200high,\
-                       clow,chigh,logrclow,logrchigh,\
-                       nlow,nhigh,logrtlow,logrthigh,\
-                       dellow,delhigh,\
+                       nsig_c200low,nsig_c200high,tSFlow,tSFhigh,\
+                       logmWDMlow,logmWDMhigh,logsigmaSIlow,logsigmaSIhigh,\
+                       logmleftlow,logmlefthigh,zinlow,zinhigh,\
                        logMcenlow,logMcenhigh,\
                        logacenlow,logacenhigh,\
                        Arotlow,Arothigh,\
@@ -51,24 +51,26 @@ def lnprior_set_single(theta,n_betpars,bet0min,bet0max,\
     maxarr[n_betpars:n_betpars+nu_components*2] = nupars_max
     minarr[n_betpars+nu_components*2] = logM200low
     maxarr[n_betpars+nu_components*2] = logM200high
-    minarr[n_betpars+nu_components*2+1] = clow
-    maxarr[n_betpars+nu_components*2+1] = chigh
-    minarr[n_betpars+nu_components*2+2] = logrclow
-    maxarr[n_betpars+nu_components*2+2] = logrchigh
-    minarr[n_betpars+nu_components*2+3] = nlow
-    maxarr[n_betpars+nu_components*2+3] = nhigh
-    minarr[n_betpars+nu_components*2+4] = logrtlow
-    maxarr[n_betpars+nu_components*2+4] = logrthigh
-    minarr[n_betpars+nu_components*2+5] = dellow
-    maxarr[n_betpars+nu_components*2+5] = delhigh
-    minarr[n_betpars+nu_components*2+6] = logMcenlow
-    maxarr[n_betpars+nu_components*2+6] = logMcenhigh
-    minarr[n_betpars+nu_components*2+7] = logacenlow
-    maxarr[n_betpars+nu_components*2+7] = logacenhigh
-    minarr[n_betpars+nu_components*2+8] = Arotlow
-    maxarr[n_betpars+nu_components*2+8] = Arothigh
-    minarr[n_betpars+nu_components*2+9] = drangelow
-    maxarr[n_betpars+nu_components*2+9] = drangehigh
+    minarr[n_betpars+nu_components*2+1] = nsig_c200low
+    maxarr[n_betpars+nu_components*2+1] = nsig_c200high
+    minarr[n_betpars+nu_components*2+2] = tSFlow
+    maxarr[n_betpars+nu_components*2+2] = tSFhigh
+    minarr[n_betpars+nu_components*2+3] = logmWDMlow
+    maxarr[n_betpars+nu_components*2+3] = logmWDMhigh
+    minarr[n_betpars+nu_components*2+4] = logsigmaSIlow
+    maxarr[n_betpars+nu_components*2+4] = logsigmaSIhigh
+    minarr[n_betpars+nu_components*2+5] = logmleftlow
+    maxarr[n_betpars+nu_components*2+5] = logmlefthigh
+    minarr[n_betpars+nu_components*2+6] = zinlow
+    maxarr[n_betpars+nu_components*2+6] = zinhigh
+    minarr[n_betpars+nu_components*2+7] = logMcenlow
+    maxarr[n_betpars+nu_components*2+7] = logMcenhigh
+    minarr[n_betpars+nu_components*2+8] = logacenlow
+    maxarr[n_betpars+nu_components*2+8] = logacenhigh
+    minarr[n_betpars+nu_components*2+9] = Arotlow
+    maxarr[n_betpars+nu_components*2+9] = Arothigh
+    minarr[n_betpars+nu_components*2+10] = drangelow
+    maxarr[n_betpars+nu_components*2+10] = drangehigh
     minarr[ndims-1] = Mstar_min
     maxarr[ndims-1] = Mstar_max
 
@@ -123,10 +125,11 @@ def lnlike_single(theta,x1,x2,y1,y1err,y2,y2err):
     nuparsu = np.array(nupars)
     Mparsu = np.array(Mpars)
     Mparsu[0] = 10.**Mpars[0]
-    Mparsu[2] = 10.**Mpars[2]
+    Mparsu[3] = 10.**Mpars[3]
     Mparsu[4] = 10.**Mpars[4]
-    Mparsu[6] = 10.**Mpars[6]
+    Mparsu[5] = 10.**Mpars[5]
     Mparsu[7] = 10.**Mpars[7]
+    Mparsu[8] = 10.**Mpars[8]
 
     #Add dummy data points for low and high x1
     #to ensure +ve definite surface density
@@ -163,14 +166,11 @@ def lnlike_single(theta,x1,x2,y1,y1err,y2,y2err):
     lnlike_out = -0.5*(np.sum((y1-model1)**2*inv_sigma2_1)+\
                        np.sum((y2-model2)**2*inv_sigma2_2))
 
-    if (cosmo_cprior == 'yes'):
-        #Add the conc. to the likelihood function
-        #as a Gaussian in logspace:
-        M200 = Mparsu[0]
-        log_conc = np.log10(Mparsu[1])
-        log_cmean = np.log10(cosmo_cfunc(M200,h))
-        lnlike_out = lnlike_out - \
-                     (log_conc-log_cmean)**2.0/(2.0*sig_c200**2.0)
+    #Add the conc. to the likelihood function
+    #as a Gaussian in logspace:
+    nsig_c200 = Mparsu[1]
+    lnlike_out = lnlike_out - \
+                 (nsig_c200**2.0/2.0)
     
     if (lnlike_out != lnlike_out):
         lnlike_out = -np.inf
@@ -190,11 +190,12 @@ def lnlike_single_vs(theta,x1,x2,y1,y1err,y2,y2err,\
     nuparsu = np.array(nupars)
     Mparsu = np.array(Mpars)
     Mparsu[0] = 10.**Mpars[0]
-    Mparsu[2] = 10.**Mpars[2]
+    Mparsu[3] = 10.**Mpars[3]
     Mparsu[4] = 10.**Mpars[4]
-    Mparsu[6] = 10.**Mpars[6]
+    Mparsu[5] = 10.**Mpars[5]
     Mparsu[7] = 10.**Mpars[7]
-
+    Mparsu[8] = 10.**Mpars[8]
+    
     #Add dummy data points for low and high x1
     #to ensure +ve definite surface density
     #if using negative Plummer components:
@@ -239,15 +240,12 @@ def lnlike_single_vs(theta,x1,x2,y1,y1err,y2,y2err,\
                            np.log(vsp_pdf(model3,vsp1val,vsp1pdf))+\
                            np.log(vsp_pdf(model4,vsp2val,vsp2pdf))
 
-    if (cosmo_cprior == 'yes'):
-        #Add the conc. to the likelihood function
-        #as a Gaussian in logspace:
-        M200 = Mparsu[0]
-        log_conc = np.log10(Mparsu[1])
-        log_cmean = np.log10(cosmo_cfunc(M200,h))
-        lnlike_out = lnlike_out - \
-                     (log_conc-log_cmean)**2.0/(2.0*sig_c200**2.0)
-    
+    #Add the conc. to the likelihood function
+    #as a Gaussian in logspace:
+    nsig_c200 = Mparsu[1]
+    lnlike_out = lnlike_out - \
+                 (nsig_c200**2.0/2.0)
+
     if (lnlike_out != lnlike_out):
         lnlike_out = -np.inf
 
@@ -266,10 +264,11 @@ def lnlike_single_prop(theta,x1,x2,x3,y1,y1err,y2,y2err,\
     nuparsu = np.array(nupars)
     Mparsu = np.array(Mpars)
     Mparsu[0] = 10.**Mpars[0]
-    Mparsu[2] = 10.**Mpars[2]
+    Mparsu[3] = 10.**Mpars[3]
     Mparsu[4] = 10.**Mpars[4]
-    Mparsu[6] = 10.**Mpars[6]
+    Mparsu[5] = 10.**Mpars[5]
     Mparsu[7] = 10.**Mpars[7]
+    Mparsu[8] = 10.**Mpars[8]
     
     #Add dummy data points for low and high x1
     #to ensure +ve definite surface density
@@ -317,15 +316,12 @@ def lnlike_single_prop(theta,x1,x2,x3,y1,y1err,y2,y2err,\
                        np.sum((y3u-model3)**2*inv_sigma2_3)+\
                        np.sum((y4u-model4)**2*inv_sigma2_4))
 
-    if (cosmo_cprior == 'yes'):
-        #Add the conc. to the likelihood function
-        #as a Gaussian in logspace:
-        M200 = Mparsu[0]
-        log_conc = np.log10(Mparsu[1])
-        log_cmean = np.log10(cosmo_cfunc(M200,h))
-        lnlike_out = lnlike_out - \
-            (log_conc-log_cmean)**2.0/(2.0*sig_c200**2.0)
-        
+    #Add the conc. to the likelihood function
+    #as a Gaussian in logspace:
+    nsig_c200 = Mparsu[1]
+    lnlike_out = lnlike_out - \
+                 (nsig_c200**2.0/2.0)
+    
     if (lnlike_out != lnlike_out):
         lnlike_out = -np.inf            
     
@@ -345,11 +341,12 @@ def lnlike_single_prop_vs(theta,x1,x2,x3,y1,y1err,y2,y2err,\
     nuparsu = np.array(nupars)
     Mparsu = np.array(Mpars)
     Mparsu[0] = 10.**Mpars[0]
-    Mparsu[2] = 10.**Mpars[2]
+    Mparsu[3] = 10.**Mpars[3]
     Mparsu[4] = 10.**Mpars[4]
-    Mparsu[6] = 10.**Mpars[6]
+    Mparsu[5] = 10.**Mpars[5]
     Mparsu[7] = 10.**Mpars[7]
-    
+    Mparsu[8] = 10.**Mpars[8]
+
     #Add dummy data points for low and high x1
     #to ensure +ve definite surface density
     #if using negative Plummer components:
@@ -418,14 +415,11 @@ def lnlike_single_prop_vs(theta,x1,x2,x3,y1,y1err,y2,y2err,\
                                np.log(vsp_pdf(model5,vsp1val,vsp1pdf))+\
                                np.log(vsp_pdf(model6,vsp2val,vsp2pdf))
                                
-    if (cosmo_cprior == 'yes'):
-        #Add the conc. to the likelihood function
-        #as a Gaussian in logspace:
-        M200 = Mparsu[0]
-        log_conc = np.log10(Mparsu[1])
-        log_cmean = np.log10(cosmo_cfunc(M200,h))
-        lnlike_out = lnlike_out - \
-            (log_conc-log_cmean)**2.0/(2.0*sig_c200**2.0)
+    #Add the conc. to the likelihood function
+    #as a Gaussian in logspace:
+    nsig_c200 = Mparsu[1]
+    lnlike_out = lnlike_out - \
+                 (nsig_c200**2.0/2.0)
         
     if (lnlike_out != lnlike_out):
         lnlike_out = -np.inf
@@ -459,9 +453,11 @@ from binulator_surffuncs import *
 from binulator_velfuncs import * 
 from figures import * 
 import sys
+import disSat as dis
+import corner
 
 #Welcome blurb: 
-print('###### GRAVSPHERE VERSION 1.5 ######\n')
+print('###### GRAVSPHERE VERSION 2.0 ######\n')
 
 #Default to run on a single CPU:
 nprocs = 1
@@ -470,10 +466,13 @@ nprocs = 1
 #Code parameters:
 datadir = './Data/'
 nwalkers = 250
-nmodels = 25000
+nmodels = 2500
 
 #Codemode [run or plot]:
 codemode = 'run'
+if (codemode != 'run' and codemode !='plot'):
+    print("Oops. Attempting to run in an unknown '%s' mode. You can only run in 'run' mode which runs the fitting routines, or 'plot' mode that plots the output from the fitting routines. Please try again. Bye!" % (codemode))
+    sys.exit(0)
 
 #Use VSP2 if using VSPs:
 novsptwo = 'no'
@@ -494,7 +493,7 @@ propnoprop = 'no'
 #from gravsphere_initialise_LeoII import *
 #from gravsphere_initialise_Sextans import *
 #from gravsphere_initialise_Sculptor import *
-#from gravsphere_initialise_Fornax import *
+from gravsphere_initialise_Fornax import *
 #from gravsphere_initialise_CVnI import *
 #from gravsphere_initialise_SegI import *
 #from gravsphere_initialise_SMC import *
@@ -505,7 +504,7 @@ propnoprop = 'no'
 #from gravsphere_initialise_PlumCuspOm import *
 #from gravsphere_initialise_SMCmock import *
 #from gravsphere_initialise_Ocenmock import *
-from gravsphere_initialise_FIRE import *
+#from gravsphere_initialise_FIRE import *
 #from gravsphere_initialise_EDGE import *
 
 #M31 satellites:
@@ -517,12 +516,9 @@ print('Doing galaxy:',whichgal)
 print('Model parameters:')
 print('M200low, M200high [1e9 Msun]:', \
     10.0**logM200low/1.0e9, 10.0**logM200high/1.0e9)
-print('clow, chigh:', clow, chigh)
-if (cosmo_cprior == 'yes'):
-    if (mWDM > 0):
-        print('Warm dark matter cosmology with mWDM(keV):',mWDM)
-    else:
-        print('Cold dark matter cosmology')
+print('nsig_c200low, nsig_c200high:', nsig_c200low, nsig_c200high)
+print('mWDMlow, mWDMhigh [keV]:',10.0**logmWDMlow, 10.0**logmWDMhigh)
+print('sigmaSIlow, sigmaSIhigh [cm2/g]:', 10.0**logsigmaSIlow, 10.0**logsigmaSIhigh)
 if (logMcenlow > 0.0):
     print('Including central dark mass in the range [1e6 Msun]:', \
           10.0**logMcenlow/1.0e6, 10.0**logMcenhigh/1.0e6)
@@ -538,8 +534,6 @@ if (propermotion == 'yes'):
     outdir = outdir + 'Propermotion/'
 if (virialshape == 'yes'):
     outdir = outdir + 'VirialShape/'
-if (cosmo_cprior == 'yes'):
-    outdir = outdir + 'CosmoC/'
 
 #Set tracer model and vel. ani. functions:
 n_betpars = 4
@@ -652,20 +646,25 @@ if (intpnts < 0):
     intpnts = np.int(150)
 print('Inner/outer radial Jeans grid:', rmin, rmax, intpnts)
 
-#Set up the mass model functions:
+#Set up the mass model functions. Mass profile comes from
+#the disSat package by S. Kim. Parameters and details
+#here: https://github.com/stacykim/disSat/.
 M = lambda r, Mpars: \
-    corenfw_tides_mass(r,Mpars[0],Mpars[1],Mpars[2],\
-                         Mpars[3],Mpars[4],Mpars[5])
+    cosmo_profile_mass(r,Mpars[0],Mpars[1],Mpars[2],\
+                       Mpars[3],Mpars[4],Mpars[5],\
+                       Mpars[6])
 rho = lambda r, Mpars: \
-    corenfw_tides_den(r,Mpars[0],Mpars[1],Mpars[2],\
-                        Mpars[3],Mpars[4],Mpars[5])
+    cosmo_profile_den(r,Mpars[0],Mpars[1],Mpars[2],\
+                      Mpars[3],Mpars[4],Mpars[5],\
+                      Mpars[6])
 dlnrhodlnr = lambda r, Mpars: \
-    corenfw_tides_dlnrhodlnr(r,Mpars[0],Mpars[1],Mpars[2],\
-                               Mpars[3],Mpars[4],Mpars[5])
+    cosmo_profile_dlnrhodlnr(r,Mpars[0],Mpars[1],Mpars[2],\
+                             Mpars[3],Mpars[4],Mpars[5],\
+                             Mpars[6])
 #Central dark mass:
 Mcentral = lambda r, Mpars: \
            plummass(r,Mpars[6:8])
-n_mpars = 8
+n_mpars = 9
 
 #Set min/max priors on the stellar mass:                        
 Mstar_min = Mstar - Mstar_err
@@ -731,37 +730,93 @@ if (codemode == 'run'):
     print('Will write output to:', outdir)
     
     #Initialise the walkers:
-    pos = np.zeros((nwalkers, ndim), dtype='float')
-    pos[:,0] = np.random.uniform(bet0min,bet0max,nwalkers)
-    pos[:,1] = np.random.uniform(betinfmin,betinfmax,nwalkers)
-    pos[:,2] = np.random.uniform(logbetr0min,logbetr0max,nwalkers)
-    pos[:,3] = np.random.uniform(betnmin,betnmax,nwalkers)
-    for i in range(len(pfits)):
-        pos[:,n_betpars+i] = \
-            np.random.uniform(nupars_minstart[i],\
-                nupars_maxstart[i],nwalkers)
-    pos[:,n_betpars+nu_components*2] = \
-        np.random.uniform(logM200low,logM200high,nwalkers)
-    pos[:,n_betpars+nu_components*2+1] = \
-        np.random.uniform(clow,chigh,nwalkers)
-    pos[:,n_betpars+nu_components*2+2] = \
-        np.random.uniform(logrclow,logrchigh,nwalkers)
-    pos[:,n_betpars+nu_components*2+3] = \
-        np.random.uniform(nlow,nhigh,nwalkers)
-    pos[:,n_betpars+nu_components*2+4] = \
-        np.random.uniform(logrtlow,logrthigh,nwalkers)
-    pos[:,n_betpars+nu_components*2+5] = \
-        np.random.uniform(dellow,delhigh,nwalkers)
-    pos[:,n_betpars+nu_components*2+6] = \
-        np.random.uniform(logMcenlow,logMcenhigh,nwalkers)
-    pos[:,n_betpars+nu_components*2+7] = \
-        np.random.uniform(logacenlow,logacenhigh,nwalkers)
-    pos[:,n_betpars+nu_components*2+8] = \
-        np.random.uniform(Arotlow,Arothigh,nwalkers)
-    pos[:,n_betpars+nu_components*2+9] = \
-        np.random.uniform(drangelow,drangehigh,nwalkers)
-    pos[:,ndim-1] = \
-        np.random.uniform(Mstar_min,Mstar_max,nwalkers)
+#    walkermode = 'safe'
+    walkermode = 'fast'
+    
+    if (walkermode == 'safe'):
+        pos = np.zeros((nwalkers, ndim), dtype='float')
+        pos[:,0] = np.random.uniform(bet0min,bet0max,nwalkers)
+        pos[:,1] = np.random.uniform(betinfmin,betinfmax,nwalkers)
+        pos[:,2] = np.random.uniform(logbetr0min,logbetr0max,nwalkers)
+        pos[:,3] = np.random.uniform(betnmin,betnmax,nwalkers)
+        for i in range(len(pfits)):
+            pos[:,n_betpars+i] = \
+                    np.random.uniform(nupars_minstart[i],\
+                                      nupars_maxstart[i],nwalkers)
+        pos[:,n_betpars+nu_components*2] = \
+                np.random.uniform(logM200low,logM200high,nwalkers)
+        pos[:,n_betpars+nu_components*2+1] = \
+                np.random.uniform(nsig_c200low,nsig_c200high,nwalkers)
+        pos[:,n_betpars+nu_components*2+2] = \
+                np.random.uniform(tSFlow,tSFhigh,nwalkers)
+        pos[:,n_betpars+nu_components*2+3] = \
+                np.random.uniform(logmWDMlow,logmWDMhigh,nwalkers)
+        pos[:,n_betpars+nu_components*2+4] = \
+                np.random.uniform(logsigmaSIlow,logsigmaSIhigh,nwalkers)
+        pos[:,n_betpars+nu_components*2+5] = \
+                np.random.uniform(logmleftlow,logmlefthigh,nwalkers)
+        pos[:,n_betpars+nu_components*2+6] = \
+                np.random.uniform(zinlow,zinhigh,nwalkers)
+        pos[:,n_betpars+nu_components*2+7] = \
+                np.random.uniform(logMcenlow,logMcenhigh,nwalkers)
+        pos[:,n_betpars+nu_components*2+8] = \
+                np.random.uniform(logacenlow,logacenhigh,nwalkers)
+        pos[:,n_betpars+nu_components*2+9] = \
+                np.random.uniform(Arotlow,Arothigh,nwalkers)
+        pos[:,n_betpars+nu_components*2+10] = \
+                np.random.uniform(drangelow,drangehigh,nwalkers)
+        pos[:,ndim-1] = \
+                np.random.uniform(Mstar_min,Mstar_max,nwalkers)
+    elif (walkermode == 'fast'):
+        pos = np.zeros((nwalkers, ndim), dtype='float')
+        poslow, poshigh = blobcalc(bet0min,bet0max)
+        pos[:,0] = np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(betinfmin,betinfmax)
+        pos[:,1] = np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(logbetr0min,logbetr0max)
+        pos[:,2] = np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(betnmin,betnmax)
+        pos[:,3] = np.random.uniform(poslow,poshigh,nwalkers)
+        for i in range(len(pfits)):
+            poslow, poshigh = blobcalc(nupars_minstart[i],nupars_maxstart[i])
+            pos[:,n_betpars+i] = \
+                    np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(logM200low,logM200high)
+        pos[:,n_betpars+nu_components*2] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(nsig_c200low,nsig_c200high)
+        pos[:,n_betpars+nu_components*2+1] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(tSFlow,tSFhigh)
+        pos[:,n_betpars+nu_components*2+2] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(logmWDMlow,logmWDMhigh)
+        pos[:,n_betpars+nu_components*2+3] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(logsigmaSIlow,logsigmaSIhigh)
+        pos[:,n_betpars+nu_components*2+4] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(logmleftlow,logmlefthigh)
+        pos[:,n_betpars+nu_components*2+5] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(zinlow,zinhigh)
+        pos[:,n_betpars+nu_components*2+6] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(logMcenlow,logMcenhigh)
+        pos[:,n_betpars+nu_components*2+7] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(logacenlow,logacenhigh)
+        pos[:,n_betpars+nu_components*2+8] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(Arotlow,Arothigh)
+        pos[:,n_betpars+nu_components*2+9] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(drangelow,drangehigh)
+        pos[:,n_betpars+nu_components*2+10] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
+        poslow, poshigh = blobcalc(Mstar_min,Mstar_max)
+        pos[:,ndim-1] = \
+                np.random.uniform(poslow,poshigh,nwalkers)
 
     #Set up fitting function and priors: 
     if (propermotion == 'no'):
@@ -790,9 +845,9 @@ if (codemode == 'run'):
                     logbetr0min,logbetr0max,betnmin,betnmax,\
                     nu_components,nupars_min,nupars_max,\
                     n_mpars,logM200low,logM200high,\
-                    clow,chigh,logrclow,logrchigh,\
-                    nlow,nhigh,logrtlow,logrthigh,\
-                    dellow,delhigh,\
+                    nsig_c200low,nsig_c200high,tSFlow,tSFhigh,\
+                    logmWDMlow,logmWDMhigh,logsigmaSIlow,logsigmaSIhigh,\
+                    logmleftlow,logmlefthigh,zinlow,zinhigh,\
                     logMcenlow,logMcenhigh,\
                     logacenlow,logacenhigh,\
                     Arotlow,Arothigh,\
@@ -821,7 +876,7 @@ if (codemode == 'run'):
                         args=(x1,x2,x3,y1,y1err,y2,y2err,\
                               y3,y3err,y4,y4err,\
                               vsp1val,vsp1pdf,vsp2val,vsp2pdf),pool=pool)
-        sampler.run_mcmc(pos, nmodels, progress = False)
+        sampler.run_mcmc(pos, nmodels, progress = True)
 
     #Store the output (including the data):
     print('Writing data to file ... ')
@@ -848,7 +903,7 @@ if (codemode == 'run'):
     chisq = -2.0 * \
             sampler.get_log_prob(discard=burn, flat=True)
     par_test = sampler.get_chain(discard=burn, flat=True)
-
+    
     f = open(outdir+'Boutput_chain.txt','w')
     for i in range(len(chisq)):
         outstr = str(chisq[i]) + ' '
@@ -944,11 +999,12 @@ elif (codemode == 'plot'):
     nustore = np.zeros((len(Mstar_rad),nsamples))
     M200store = np.zeros(nsamples)
     vmaxstore = np.zeros(nsamples)
-    cstore = np.zeros(nsamples)
-    rcstore = np.zeros(nsamples)
-    nstore = np.zeros(nsamples)
-    rtstore = np.zeros(nsamples)
-    delstore = np.zeros(nsamples)
+    nsig_c200store = np.zeros(nsamples)
+    tSFstore = np.zeros(nsamples)
+    mWDMstore = np.zeros(nsamples)
+    sigmaSIstore = np.zeros(nsamples)
+    mleftstore = np.zeros(nsamples)
+    zinstore = np.zeros(nsamples)
     Mcenstore = np.zeros((len(rbin),nsamples))
     Arotstore = np.zeros(nsamples)
     dstore = np.zeros(nsamples)
@@ -994,10 +1050,11 @@ elif (codemode == 'plot'):
         nuparsu = np.array(nupars)
         Mparsu = np.array(Mpars)
         Mparsu[0] = 10.**Mpars[0]
-        Mparsu[2] = 10.**Mpars[2]
+        Mparsu[3] = 10.**Mpars[3]
         Mparsu[4] = 10.**Mpars[4]
-        Mparsu[6] = 10.**Mpars[6]
+        Mparsu[5] = 10.**Mpars[5]
         Mparsu[7] = 10.**Mpars[7]
+        Mparsu[8] = 10.**Mpars[8]
         
         #Calculate all profiles we want to plot:
         if (propermotion == 'no'):
@@ -1026,9 +1083,8 @@ elif (codemode == 'plot'):
         Mstarr = Mstar_prof*Mstar
         nu_mass_r = multiplummass(Mstar_rad,nuparsu)
         Mcenr = Mcentral(rbin,Mparsu)
-        accelminmaxr = accelminmax_calc(rbin,M,Mcentral,Mpars,\
+        accelminmaxr = accelminmax_calc(rbin,M,Mcentral,Mparsu,\
                                         Mstar_rad,Mstar_prof,Mstar,Guse,rmin,rmax,intpnts)
-
         Mstore[:,i] = Mr
         betstore[:,i] = betar
         betstarstore[:,i] = betar/(2.0-betar)
@@ -1043,17 +1099,21 @@ elif (codemode == 'plot'):
         Mcenstore[:,i] = Mcenr
         accelminmaxstore[:,i] = accelminmaxr
 
-        vmaxstore[i] = vmax_func(Mparsu[0],Mparsu[1],h)
+
+        rfind = np.logspace(-2,3,np.int(5e3))
+        vcfind = np.sqrt(Guse * M(rfind,Mparsu) / rfind)
+        vmaxstore[i] = np.max(vcfind)/kms
         M200store[i] = Mparsu[0]
-        cstore[i] = Mparsu[1]
-        rcstore[i] = Mparsu[2]
-        nstore[i] = Mparsu[3]
-        rtstore[i] = Mparsu[4]
-        delstore[i] = Mparsu[5]
+        nsig_c200store[i] = Mparsu[1]
+        tSFstore[i] = Mparsu[2]
+        mWDMstore[i] = Mparsu[3]
+        sigmaSIstore[i] = Mparsu[4]
+        mleftstore[i] = Mparsu[5]
+        zinstore[i] = Mparsu[6]
         Arotstore[i] = Arot
         dstore[i] = drange + dgal_kpc
-        McenMstore[i] = Mparsu[6]
-        Mcenastore[i] = Mparsu[7]
+        McenMstore[i] = Mparsu[7]
+        Mcenastore[i] = Mparsu[8]
         if (calc_Jfac == 'yes'):
             alpha_rmax = dgal_kpc*alpha_Jfac_deg/deg
             Jstore[i] = get_J(rho,Mparsu,dgal_kpc,alpha_rmax)
@@ -1184,8 +1244,39 @@ elif (codemode == 'plot'):
 
     #######################################################
     #And now make the plots:
-
-    #First calculate median distance; plot all data at
+    
+    #First make a corner plot; don't include surface
+    #brightness parameters:
+    index = np.concatenate((np.arange(0,n_betpars,1,dtype=int),\
+                            np.arange(n_betpars+nu_components*2,\
+                                      ndim,1,dtype=int)),\
+                           axis=0)
+    thetause = par_test[sample_choose,:]
+    fig = corner.corner(thetause[:,index],\
+                        labels=[
+                            r"$\tilde{\beta_0}$",
+                            r"$\tilde{\beta_\infty}$",
+                            r"${\rm Log}_{10}[r_\beta/{\rm kpc}]$",
+                            r"$n_\beta$",
+                            r"$M_{200}/{\rm M}_\odot$",
+                            r"$\sigma_c$",
+                            r"$t_{\rm SF}/{\rm Gyr}$",
+                            r"$m_{\rm WDM}/{\rm keV}$",
+                            r"$\sigma_{\rm SI}/({\rm cm}^2\,{\rm g}^{-1})$",
+                            r'$m_{\rm left}/{\rm M}_odot$',
+                            r"$z_{\rm in}$",
+                            r"$M_{\rm cen}/{\rm M}_\odot$",
+                            r"$a_{\rm cen}/{\rm kpc}$",
+                            r"$A_{\rm rot}$",
+                            r"$d/{\rm kpc}$",
+                            r"$M_*/{\rm M}_\odot$",
+                        ],
+                        quantiles=[0.16, 0.5, 0.84],
+                        show_titles=True,
+                        title_kwargs={"fontsize": 12})
+    plt.savefig(outdir+'output_triangle.png',bbox_inches='tight')
+    
+    #Now calculate median distance; plot all data at
     #median:
     dmed, dsixlow, dsixhi,\
         dninelow, dninehi, \
@@ -1635,12 +1726,12 @@ elif (codemode == 'plot'):
               rho_int[4,i],rho_int[5,i],rho_int[6,i]))
     f.close()
 
-    #And the coreNFW parameters:
-    f = open(outdir+'output_M200c200_chain.txt','w')
+    #And the model parameters:
+    f = open(outdir+'output_Model_chain.txt','w')
     for i in range(len(M200store)):
-        f.write('%f %f %f %f %f %f %f\n' % \
-                (M200store[i],cstore[i],nstore[i],rcstore[i],rtstore[i],\
-                 delstore[i],vmaxstore[i]))
+        f.write('%f %f %f %f %f %f %f %f\n' % \
+                (M200store[i],nsig_c200store[i],tSFstore[i],mWDMstore[i],\
+                 sigmaSIstore[i],mleftstore[i],zinstore[i],vmaxstore[i]))
     f.close()
 
     #And the central dark mass parameters:
@@ -1928,7 +2019,7 @@ elif (codemode == 'plot'):
         plt.ylim([0,np.max(n)])
         plt.savefig(outdir+'output_vs2.pdf',bbox_inches='tight')
 
-    ##### coreNFWtides model parameters #####
+    ##### Mass model parameters #####
     nbin = 15
     fig = plt.figure(figsize=(figx,figy))
     ax = fig.add_subplot(111)
@@ -1993,19 +2084,30 @@ elif (codemode == 'plot'):
     plt.xticks(fontsize=myfontsize)
     plt.yticks(fontsize=myfontsize)
     
-    n, bins, patches = plt.hist(cstore,bins=nbin,\
-                                range=(clow,chigh),\
+    n, bins, patches = plt.hist(nsig_c200store,bins=nbin,\
+                                range=(nsig_c200low,nsig_c200high),\
                                 facecolor='b', \
                                 histtype='bar',alpha=0.5)
 
-    plt.xlabel(r'$c$',fontsize=myfontsize)
+    plt.xlabel(r'$\sigma_{c200}$',fontsize=myfontsize)
     plt.ylabel(r'$N$',fontsize=myfontsize)
 
-    plt.xlim([clow,chigh])
+    plt.xlim([nsig_c200low,nsig_c200high])
     plt.ylim([0,np.max(n)])
+    plt.savefig(outdir+'output_nsigc200.pdf',bbox_inches='tight')
 
-    plt.savefig(outdir+'output_c.pdf',bbox_inches='tight')
-  
+    #Calculate c200 from nsig_c200. This will depend
+    #on the choice of M200-c200 relation, and the
+    #cosmology. In this case, set by mWDM.        
+    cNFW_method='d15'
+    csig = dis.dark_matter.concentrations.Diemer19.scatter()
+    c200mean = np.zeros(len(M200store))
+    for jj in range(len(c200mean)):
+        c200mean[jj] = dis.genutils.cNFW(M200store[jj],z=zinstore[jj],\
+                                         method=cNFW_method,\
+                                         wdm=True,mWDM=mWDMstore[jj])
+    c200store = c200mean*10.0**(nsig_c200store*csig)
+
     fig = plt.figure(figsize=(figx,figy))
     ax = fig.add_subplot(111)
     for axis in ['top','bottom','left','right']:
@@ -2016,19 +2118,41 @@ elif (codemode == 'plot'):
     ax.tick_params('both', length=10, width=1, which='minor')
     plt.xticks(fontsize=myfontsize)
     plt.yticks(fontsize=myfontsize)
-    ax.xaxis.set_ticks(np.arange(logrclow,logrchigh+1.0,1.0))
     
-    n, bins, patches = plt.hist(np.log10(rcstore),bins=nbin,\
-                                range=(logrclow,logrchigh),\
+    n, bins, patches = plt.hist(c200store,bins=nbin,\
+                                range=(np.min(c200store),np.max(c200store)),\
+                                facecolor='k', \
+                                histtype='bar',alpha=0.5)
+    
+    plt.xlabel(r'$c_{200}$',fontsize=myfontsize)
+    plt.xlim([np.min(c200store),np.max(c200store)])
+    
+    plt.ylabel(r'$N$',fontsize=myfontsize)
+    plt.ylim([0,np.max(n)])
+    plt.savefig(outdir+'output_c200.pdf',bbox_inches='tight')
+    
+    fig = plt.figure(figsize=(figx,figy))
+    ax = fig.add_subplot(111)
+    for axis in ['top','bottom','left','right']:
+        ax.spines[axis].set_linewidth(mylinewidth)
+    tick_spacing = 0.01
+    ax.minorticks_on()
+    ax.tick_params('both', length=20, width=2, which='major')
+    ax.tick_params('both', length=10, width=1, which='minor')
+    plt.xticks(fontsize=myfontsize)
+    plt.yticks(fontsize=myfontsize)
+    
+    n, bins, patches = plt.hist(tSFstore,bins=nbin,\
+                                range=(tSFlow,tSFhigh),\
                                 facecolor='k', \
                                 histtype='bar',alpha=0.5)
         
-    plt.xlabel(r'${\rm Log}_{10}[r_c/{\rm kpc}]$',fontsize=myfontsize)
-    plt.xlim([logrclow,logrchigh])
+    plt.xlabel(r'$t_{\rm SF}\,[{\rm Gyrs}]$',fontsize=myfontsize)
+    plt.xlim([tSFlow,tSFhigh])
 
     plt.ylabel(r'$N$',fontsize=myfontsize) 
     plt.ylim([0,np.max(n)])
-    plt.savefig(outdir+'output_rc.pdf',bbox_inches='tight')
+    plt.savefig(outdir+'output_tSF.pdf',bbox_inches='tight')
 
     fig = plt.figure(figsize=(figx,figy))
     ax = fig.add_subplot(111)
@@ -2041,21 +2165,16 @@ elif (codemode == 'plot'):
     plt.xticks(fontsize=myfontsize)
     plt.yticks(fontsize=myfontsize)
 
-    n, bins, patches = plt.hist(np.log10(rtstore),bins=nbin,\
-                                range=(logrtlow,\
-                                       logrthigh),\
+    n, bins, patches = plt.hist(np.log10(mWDMstore),bins=nbin,\
+                                range=(logmWDMlow,\
+                                       logmWDMhigh),\
                                 facecolor='k', \
                                 histtype='bar',alpha=0.5)
 
-    plt.xlabel(r'${\rm Log}_{10}[r_t/{\rm kpc}]$',fontsize=myfontsize)
+    plt.xlabel(r'${\rm Log}_{10}[m_{\rm WDM}/{\rm keV}]$',fontsize=myfontsize)
     plt.ylabel(r'$N$',fontsize=myfontsize)
-    plt.savefig(outdir+'output_rt.pdf',bbox_inches='tight')
-        
-    sigmstore = np.zeros(len(rcstore))
-    for i in range(len(rcstore)):
-        sigmstore[i] = sidm_novel(rcstore[i],M200store[i],cstore[i],\
-                                  oden,rhocrit)
-                                  
+    plt.savefig(outdir+'output_mWDM.pdf',bbox_inches='tight')
+
     fig = plt.figure(figsize=(figx,figy))
     ax = fig.add_subplot(111)
     for axis in ['top','bottom','left','right']:
@@ -2067,13 +2186,13 @@ elif (codemode == 'plot'):
     plt.xticks(fontsize=myfontsize)
     plt.yticks(fontsize=myfontsize)
 
-    n, bins, patches = plt.hist(sigmstore,bins=nbin,\
-                  range=(sigmlow,sigmhigh),\
+    n, bins, patches = plt.hist(np.log10(sigmaSIstore),bins=nbin,\
+                  range=(logsigmaSIlow,logsigmaSIhigh),\
                   facecolor='k', \
                   histtype='bar',alpha=0.5)
 
     plt.ylim([0.0,np.max(n)])
-    plt.xlabel(r'$\sigma/m\,({\rm cm}^2/{\rm g})$',\
+    plt.xlabel(r'${\rm Log}_{10}[\sigma/m/({\rm cm}^2/{\rm g})]$',\
         fontsize=myfontsize)
     plt.ylabel(r'$N$',fontsize=myfontsize)
     plt.savefig(outdir+'output_sigm.pdf',bbox_inches='tight')
@@ -2089,18 +2208,18 @@ elif (codemode == 'plot'):
     plt.xticks(fontsize=myfontsize)
     plt.yticks(fontsize=myfontsize)
     
-    n, bins, patches = plt.hist(nstore,bins=nbin,\
-                                range=(nlow,nhigh),\
+    n, bins, patches = plt.hist(np.log10(mleftstore),bins=nbin,\
+                                range=(logmleftlow,logmlefthigh),\
                                 facecolor='b', \
                                 histtype='bar',alpha=0.5)
 
-    plt.xlabel(r'$n$',\
+    plt.xlabel(r'${\rm Log}_{10}[m_{\rm left}/{\rm M}_\odot]$',\
                fontsize=myfontsize)
     plt.ylabel(r'$N$',fontsize=myfontsize)
     
-    plt.xlim([nlow,nhigh])
+    plt.xlim([logmleftlow,logmlefthigh])
     plt.ylim([0,np.max(n)])
-    plt.savefig(outdir+'output_n.pdf',bbox_inches='tight')
+    plt.savefig(outdir+'output_mleft.pdf',bbox_inches='tight')
 
     fig = plt.figure(figsize=(figx,figy))
     ax = fig.add_subplot(111)
@@ -2113,18 +2232,18 @@ elif (codemode == 'plot'):
     plt.xticks(fontsize=myfontsize)
     plt.yticks(fontsize=myfontsize)
 
-    n, bins, patches = plt.hist(delstore,bins=nbin,\
-                                range=(dellow,delhigh),\
+    n, bins, patches = plt.hist(zinstore,bins=nbin,\
+                                range=(zinlow,zinhigh),\
                                 facecolor='b', \
                                 histtype='bar',alpha=0.5)
 
-    plt.xlabel(r'$\delta$',\
+    plt.xlabel(r'$z_{\rm in}$',\
                fontsize=myfontsize)
     plt.ylabel(r'$N$',fontsize=myfontsize)
 
-    plt.xlim([dellow,delhigh])
+    plt.xlim([zinlow,zinhigh])
     plt.ylim([0,np.max(n)])
-    plt.savefig(outdir+'output_del.pdf',bbox_inches='tight')
+    plt.savefig(outdir+'output_zin.pdf',bbox_inches='tight')
 
     ##### Output some confidence intervals #####
          
@@ -2154,13 +2273,6 @@ elif (codemode == 'plot'):
              vmaxnineninelow, vmaxnineninehi))
     f.close()
     
-    #And the same for rt: 
-    rtmed, rtsixlow, rtsixhi,\
-        rtninelow, rtninehi, \
-        rtnineninelow, rtnineninehi = calcmedquartnine(rtstore)
-    print('*******************************')
-    print('rt -/+ 68% :: ', rtmed, rtsixlow, rtsixhi)
-
     #And the same for d (already calculated, above):
     print('*******************************')
     print('d -/+ 68% :: ', dmed, dsixlow, dsixhi)

@@ -2,6 +2,9 @@ import numpy as np
 from binulator_apis import *
 from constants import * 
 
+#Run on multiprocessor:
+nprocs = 10
+
 #Data files and output base filename:
 whichgal = 'Fornax'
 infile_kin = './Data/Walker_dwarfs/for_justin1_spec.dat'

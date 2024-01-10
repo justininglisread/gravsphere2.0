@@ -35,7 +35,7 @@ from figures import *
 import sys
 
 #Welcome blurb: 
-print('###### BINULATOR VERSION 1.0 ######\n')
+print('###### BINULATOR VERSION 2.0 ######\n')
 
 #Default to run on single processor:
 nprocs = 1
@@ -61,7 +61,7 @@ Nbinkinarr_prop = Nbinkinarr
 #from binulator_initialise_LeoII import *
 #from binulator_initialise_Sculptor import *
 #from binulator_initialise_Sextans import *
-#from binulator_initialise_Fornax import *
+from binulator_initialise_Fornax import *
 #from binulator_initialise_SegI import *
 #from binulator_initialise_SMC import *
 #from binulator_initialise_Ocen import *
@@ -72,7 +72,7 @@ Nbinkinarr_prop = Nbinkinarr
 #from binulator_initialise_PlumCoreOm import *
 #from binulator_initialise_PlumCuspOm import *
 #from binulator_initialise_Ocenmock import *
-from binulator_initialise_FIRE import *
+#from binulator_initialise_FIRE import *
 #from binulator_initialise_EDGE import *
 
 #M31 satellites:

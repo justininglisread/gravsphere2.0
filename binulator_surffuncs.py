@@ -66,17 +66,26 @@ def tracerfit(R,surfden,surfdenerr,p0in_min,p0in_max,nprocs):
     #a three-Plummer model:
 
     #Emcee parameters:
-    nwalkers = 500
-    nmodels = 10000
+    nwalkers = 250
+    nmodels = 2500
 
     #Starting guess:
     ndims = len(p0in_min)
     pos = np.zeros((nwalkers, ndims), dtype='float')
-    p0in_startmin = p0in_min
-    p0in_startmax = p0in_max
-    for i in range(ndims):
-        pos[:,i] = np.random.uniform(p0in_startmin[i],\
-            p0in_startmax[i],nwalkers)
+
+#    walkermode = 'safe'
+    walkermode = 'fast'
+
+    if (walkermode == 'safe'):
+        p0in_startmin = p0in_min
+        p0in_startmax = p0in_max
+        for i in range(ndims):
+            pos[:,i] = np.random.uniform(p0in_startmin[i],\
+                p0in_startmax[i],nwalkers)
+    elif (walkermode == 'fast'):
+        for i in range(ndims):
+            poslow, poshigh = blobcalc(p0in_min[i],p0in_max[i])
+            pos[:,i] = np.random.uniform(poslow,poshigh,nwalkers)
 
     #Run chains:
     with Pool(processes = nprocs) as pool:

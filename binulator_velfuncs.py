@@ -579,17 +579,26 @@ def velfitbin(vz,vzerr,ms,p0vin_min,p0vin_max,nsamples,nprocs):
     #Fit the model velocity pdf to a single bin:
 
     #Emcee parameters:
-    nwalkers = 500
-    nmodels = 10000
+    nwalkers = 250
+    nmodels = 2500
 
     #Starting guess
+#    walkermode = 'safe'
+    walkermode = 'fast'
+
     ndims = len(p0vin_min)
     pos = np.zeros((nwalkers, ndims), dtype='float')
-    p0vin_startmin = p0vin_min
-    p0vin_startmax = p0vin_max    
-    for i in range(ndims):
-        pos[:,i] = np.random.uniform(p0vin_startmin[i],\
-            p0vin_startmax[i],nwalkers)
+                 
+    if (walkermode == 'safe'):
+        p0vin_startmin = p0vin_min
+        p0vin_startmax = p0vin_max    
+        for i in range(ndims):
+            pos[:,i] = np.random.uniform(p0vin_startmin[i],\
+                p0vin_startmax[i],nwalkers)
+    elif (walkermode == 'fast'):
+        for i in range(ndims):
+            poslow, poshigh = blobcalc(p0vin_min[i],p0vin_max[i])
+            pos[:,i] = np.random.uniform(poslow,poshigh,nwalkers)
 
     #Run chains:
     with Pool(processes = nprocs) as pool:

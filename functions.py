@@ -4,10 +4,11 @@ from scipy.misc.common import derivative
 from scipy.special import gamma
 from scipy.integrate import quad, dblquad
 from constants import *
+import disSat as dis
 multimode = 'normal'
 
 ###########################################################
-#For setting cosmology priors on coreNFWtides parameters.
+#For setting cosmology priors on mass model parameters.
 def cosmo_cfunc(M200,h):
     #From Dutton & Maccio 2014. Requires as input masses 
     #defined in 200c system in units of Msun:
@@ -28,6 +29,231 @@ def cosmo_cfunc_WDM(M200,h,OmegaM,rhocrit,mWDM):
     Mhm = 4.0/3.0*np.pi*rhocrit*(lamhm/2.0)**3.0
     cWDM = cCDM * (1.0 + gamma1*Mhm / M200)**(-gamma2)
     return cWDM
+
+def dadt(axp_t,O_mat_0,O_vac_0,O_k_0):
+    dadt = (1.0/axp_t) * \
+        ( O_mat_0 + \
+              O_vac_0 * axp_t*axp_t*axp_t + \
+              O_k_0   * axp_t )
+    dadt = np.sqrt(dadt)
+    return dadt
+
+def dadtau(axp_tau,O_mat_0,O_vac_0,O_k_0):
+    dadtau = axp_tau*axp_tau*axp_tau * \
+        ( O_mat_0 + \
+              O_vac_0 * axp_tau*axp_tau*axp_tau + \
+              O_k_0   * axp_tau )
+    dadtau = np.sqrt(dadtau)
+
+    return dadtau
+
+def friedmann(O_mat_0,O_vac_0,O_k_0,alpha,axp_min):
+    # This subroutine assumes that axp = 1 at z = 0 (today)
+    # and that t and tau = 0 at z = 0 (today).
+    # axp is the expansion factor, hexp the Hubble constant
+    # defined as hexp=1/axp*daxp/dtau, tau the conformal
+    # time, and t the look-back time, both in unit of 1/H0.
+    # alpha is the required accuracy and axp_min is the
+    # starting expansion factor of the look-up table.
+    # ntable is the required size of the look-up table.
+
+    #Set up variables:
+    axp_tau = 1.0
+    axp_t = 1.0
+    tau = 0.0
+    t = 0.0
+    nstep = 0
+
+    while (axp_tau > axp_min or axp_t >= axp_min):
+        dtau = alpha * axp_tau / dadtau(axp_tau,O_mat_0,O_vac_0,O_k_0)
+        axp_tau_pre = axp_tau - dadtau(axp_tau,O_mat_0,O_vac_0,O_k_0)*dtau/2.0
+        axp_tau = axp_tau - dadtau(axp_tau_pre,O_mat_0,O_vac_0,O_k_0)*dtau
+        tau = tau - dtau
+        dt = alpha * axp_t / dadt(axp_t,O_mat_0,O_vac_0,O_k_0)
+        axp_t_pre = axp_t - dadt(axp_t,O_mat_0,O_vac_0,O_k_0)*dt/2.0
+        axp_t = axp_t - dadt(axp_t_pre,O_mat_0,O_vac_0,O_k_0)*dt
+        t = t - dt
+        nstep = nstep + 1
+
+    age_tot=-t
+    
+    #Set ntable = nstep and set up output arrays accordingly:
+    ntable = nstep
+    axp_out = np.zeros(ntable)
+    hexp_out = np.zeros(ntable)
+    tau_out = np.zeros(ntable)
+    t_out = np.zeros(ntable)
+    nskip=nstep/ntable
+
+    axp_t = 1.0
+    t = 0.0
+    axp_tau = 1.0
+    tau = 0.0
+    nstep = 0
+    nout = 0
+    t_out[nout]=t
+    tau_out[nout]=tau
+    axp_out[nout]=axp_tau
+    hexp_out[nout]=dadtau(axp_tau,O_mat_0,O_vac_0,O_k_0)/axp_tau
+  
+    while (axp_tau >= axp_min or axp_t >= axp_min):
+        dtau = alpha * axp_tau / dadtau(axp_tau,O_mat_0,O_vac_0,O_k_0)
+        axp_tau_pre = axp_tau - dadtau(axp_tau,O_mat_0,O_vac_0,O_k_0)*dtau/2.0
+        axp_tau = axp_tau - dadtau(axp_tau_pre,O_mat_0,O_vac_0,O_k_0)*dtau
+        tau = tau - dtau
+        dt = alpha * axp_t / dadt(axp_t,O_mat_0,O_vac_0,O_k_0)
+        axp_t_pre = axp_t - dadt(axp_t,O_mat_0,O_vac_0,O_k_0)*dt/2.0
+        axp_t = axp_t - dadt(axp_t_pre,O_mat_0,O_vac_0,O_k_0)*dt
+        t = t - dt
+
+        if(np.mod(nstep,nskip)==0):
+            t_out[nout]=t
+            tau_out[nout]=tau
+            axp_out[nout]=axp_tau
+            hexp_out[nout]=dadtau(axp_tau,O_mat_0,O_vac_0,O_k_0)/axp_tau
+            nout = nout + 1
+        nstep = nstep + 1
+
+    return t_out, tau_out, axp_out, hexp_out
+
+def time_from_redshift(z,Omegam,OmegaL,h):
+    #Convert redshift, z, to physical time given
+    #cosmological parameters. Output in Gyrs.
+    Hub = h * 100. * kms / Mpc
+    invHub_Gyr = 1.0/Hub/Gyr
+    t_out, tau_out, axp_out, hexp_out = \
+        friedmann(Omegam,OmegaL,0.0,1e-4,1e-3)
+    t_out = -t_out*invHub_Gyr*1.0e9
+    index = np.argsort(axp_out)
+    a = 1.0/(1.0+z)
+    t = np.interp(a,axp_out[index],np.max(t_out)-t_out[index])
+    return t/1.0e9
+
+def redshift_from_time(t,Omegam,OmegaL,h):
+    #This calculates the inverse of the
+    #time_from_redshift routine. Input
+    #time in Gyrs.
+    zarr = np.logspace(-1,4,np.int(1e4))
+    tarr = time_from_redshift(zarr,Omegam,OmegaL,h)
+    index = np.argsort(tarr)
+    z = np.interp(t,tarr[index],zarr[index])
+    return z
+
+def estimate_M200abund(Mstarlo, Mstarhi, tSFlow, tSFhigh):
+    #Load in the abundance matching
+    #relation (non-paramteric) from
+    #Read & Erkal 2019:
+    f = open('./Data/mSFR-mhalo-field.txt','r')
+    data = np.genfromtxt(f)
+    f.close()
+    M200lowarr = data[:,0][np.where(data[:,1])][::-1]
+    SFRlow = data[:,1][np.where(data[:,1])][::-1]
+    M200higharr = data[:,0][np.where(data[:,2])][::-1]
+    SFRhigh = data[:,2][np.where(data[:,2])][::-1]
+
+    #Calculate the abundance matching mass:
+    mSFRlo = Mstarlo / (tSFhigh*1.0e9)
+    mSFRhi = Mstarhi / (tSFlow*1.0e9)
+    M200_SFRhi = np.interp(mSFRhi,SFRlow,M200lowarr)
+    M200_SFRlo = np.interp(mSFRlo,SFRhigh,M200higharr)
+
+    return M200_SFRlo, M200_SFRhi
+
+def findJsq(apo,peri,host,hostpars):
+    '''Finds the SPECIFIC angular momentum squared (Jsq) for
+       an orbit with apo and peri in a spherical potential with
+       force function host and properties hostpars.'''  
+    if apo-peri == 0:
+        Jsq = apo**3.0*np.abs(host.fr(peri,hostpars))
+    else:
+        Jsq = (host.pot(peri,hostpars)-host.pot(apo,hostpars))*\
+              (1.0/2.0/apo**2.0-1.0/2.0/peri**2.0)**(-1.0)
+    return Jsq
+
+def rtfunc(d,peri,apo,host,hostpars,sat,satpars,alpha,satmass,x):
+    xs = d - x
+    satpars[0] = satmass
+    Jsq = findJsq(apo,peri,host,hostpars)
+    Omega = np.sqrt(Jsq/d**4)
+    Omega_s = np.sqrt(np.abs(sat.fr(x,satpars))/x)
+    F = -host.fr(d,hostpars)+host.fr(xs,hostpars)-sat.fr(x,satpars)-\
+        2*alpha*Omega*Omega_s*x-Omega*Omega*x
+    return F
+
+def findrt(d,peri,apo,host,hostpars,sat,satpars,alpha):
+    '''This routine finds the tidal radius by solving eq. 7 of Read et al.
+    2006. Inputs are:
+      - d        : current sat position 
+      - peri     : orbit pericentre
+      - apo      : orbit apocentre
+      - host     : host galaxy potential
+      - hostpars : host galaxy potential parameters (depends on host)
+      - sat      : sat galaxy potential
+      - satpars  : sat galaxy pot pars
+      - alpha    : sat internal orbit parameter [-1,0,1] for ret/rad/pro
+    '''
+
+    from scipy.optimize.zeros import bisect
+    
+    # Check inputs are sensible:
+    assert d >= peri,\
+           'satellite position %f < peri %f' % (d,peri)
+    assert d <= apo,\
+           'satellite position %f > apo %f' % (d,apo)
+    
+    # Root find to get rt:
+    xmin = d/1.0e4 + d/1.0e4*1e-6
+    xmax = d - d*1.0e-6
+    rt = bisect(lambda x: rtfunc(d,peri,apo,host,hostpars,sat,
+                                 satpars,alpha,satpars[0],x),xmin,xmax)
+    return rt
+
+def mleftmaxcalc(M200,rp,ra,galmodel):
+    #This routine takes a host galaxy model (e.g. MW/M31)
+    #and calculates the mass likely to be stripped given
+    #a peri, rp, and apo, ra of the orbit.
+
+    #Set the host galaxy model:
+    if (galmodel == 'MW'):
+        #Milky Way based on Read 08:
+        import Tidecalc.galaxy as host
+        hostpars = [3.0e10*Msun,2.5*kpc,0.25*kpc,0.0*Msun,\
+                    1.0*kpc,1.0e12*Msun,
+                    12.16*kpc,17.0,G,999]
+    elif (galmodel == 'M31'):
+        #M31 based on Geehan et al. 2006:
+        hostpars = [8.4e10*Msun,5.4*kpc,0.26*kpc,3.3e10*Msun,\
+                    0.61*kpc,6.8e11*Msun,
+                    8.18*kpc,22,G,999]
+    else:
+        print('%s mass model not yet implemented! Oops' % (galmodel))
+        print('Bye bye')
+        sys.exit(0)
+
+    #Set the satellite galaxy model to be NFW:
+    c200 = cosmo_cfunc(M200,h)
+    import Tidecalc.corenfw as sat
+    satpars = [M200*Msun,c200,0.0,\
+               1.0*kpc,rhocrit*Msun/kpc**3.0,G,999]
+
+    #Assume the satellite is at pericentre and use the
+    #retrograde stripping radius (max stripping):
+    d = rp
+    alpha = -1
+
+    #Then calculate stripping radius as in Read+06:
+    rt = findrt(d*kpc,rp*kpc,ra*kpc,host,hostpars,\
+                sat,satpars,alpha)
+    print('Tidal radius found (kpc):', rt/kpc)
+    
+    #Now assume all mass beyond rt is lost, giving
+    #us mleft:
+    mleft = sat.cummass(rt,satpars)
+    print('Satellite mass within rt (1e9 Msun):', \
+          mleft/1.0e9/Msun)
+
+    return mleft/Msun
+
 
 ###########################################################
 #For constraining particle DM models:
@@ -158,6 +384,58 @@ def get_D(rho, Mpars, distance, r_max):
 
 ###########################################################
 #For DM mass profile:
+def cosmo_profile_mass(r,M200,nsig_c200,tSF,mWDM,sigmaSI,\
+                       mleft,zin):
+    #Assume M200 here defined at zin which is the redshift
+    #of subhalo infall. This can be fit as a free parameter
+    #or fixed by a prior.
+
+    #**TO DO**
+    #1. improve dark matter heating model, fit
+    #on latest data using DarkLight!
+    #2. allow dark matter heating and sigmaSI to work
+    #together
+    
+    #Hard code choice of mass-concentration relation for
+    #now. Can be changed here if wanted.
+    cNFW_method='d15'
+    csig = dis.dark_matter.concentrations.Diemer19.scatter()
+    
+    #Calculate c200 from nsig_c200. This will depend
+    #on the choice of M200-c200 relation, and the
+    #cosmology. In this case, set by mWDM.
+    c200mean = dis.genutils.cNFW(M200,z=zin,method=cNFW_method,\
+                        wdm=True,mWDM=mWDM)
+    c200 = c200mean*10.0**(nsig_c200*csig)
+
+    #Bit of hack here too for now ***WARNING***.
+    #If sigmaSI > 1.0e-4 then assume we're fitting SIDM.
+    #In this case, no dark matter heating will occur. This
+    #needs to be fixed/tested/implemented. Otherwise if
+    #sigmaSI < 1.0e-4 then assume no SIDM and dark matter
+    #heating will be set by the tSF parameter (that is
+    #ignored if fitting SIDM):
+    if (sigmaSI < 1.0e-4):
+        menc = dis.vutils.menc(r, M200, 'coreNFW', c200=c200,\
+                        cNFW_method='d15',zin=zin,tSF=tSF,\
+                        wdm=True,mWDM=mWDM,sigmaSI=None,\
+                        mleft=mleft)
+    else:
+        menc = dis.vutils.menc(r, M200, 'sidm', c200=c200,\
+                        cNFW_method='d15',zin=zin,tSF=None,\
+                        wdm=True,mWDM=mWDM,sigmaSI=sigmaSI,\
+                        mleft=mleft)
+
+    return menc
+
+def cosmo_profile_den(r, M200,nsig_c200,tSF,mWDM,sigmaSI,\
+                      mleft,zin):
+    return np.zeros(len(r))
+
+def cosmo_profile_dlnrhodlnr(r, M200,nsig_c200,tSF,mWDM,sigmaSI,\
+                             mleft,zin):
+    return np.zeros(len(r))
+
 def corenfw_tides_den(r,M200,c,rc,n,rt,delta):
     gcon=1./(np.log(1.+c)-c/(1.+c))
     deltachar=oden*c**3.*gcon/3.
@@ -214,16 +492,6 @@ def corenfw_tides_dlnrhodlnr(r,M200,c,rc,n,rt,delta):
         r,dx=1e-6)
     dlnrhodlnr = dden / corenfw_tides_den(r,M200,c,rc,n,rt,delta) * r
     return dlnrhodlnr
-    
-def vmax_func(M200,c200,h):
-    oden = 200.0
-    Guse = G*Msun/kpc
-    r200=(3./4.*M200/(np.pi*oden*rhocrit))**(1./3.)
-    
-    #This from Sigad et al. 2000 (via Schneider et al. 2017):
-    vmax = 0.465*np.sqrt(Guse*M200/r200)/\
-           np.sqrt(1.0/c200*np.log(1.0+c200)-(1.0+c200)**(-1.0))
-    return vmax/kms
     
 
 ###########################################################
@@ -864,6 +1132,15 @@ def Rhalf_func(M1,M2,M3,a1,a2,a3):
         i = i + 1
     Rhalf = ranal[i-1]
     return Rhalf
+
+
+###########################################################
+#For setting up walkers for fitting:
+def blobcalc(lowin,highin):
+    bitscale = (highin-lowin)/2.0
+    low = (lowin+highin)/2.0-bitscale*0.1
+    high = (lowin+highin)/2.0+bitscale*0.1
+    return low, high
 
 
 ###########################################################

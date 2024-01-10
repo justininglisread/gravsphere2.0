@@ -1,0 +1,49 @@
+nohup: ignoring input
+###### BINULATOR VERSION 2.0 ######
+
+Total effective no. of tracers (photometric): 2454.91708873748
+Data Rhalf: 0.19003800760152031
+Systemic velocity: -292.81081593454576
+Total effective no. of tracers (kinematic): 503.7155379855777
+Min/max velocity: -203.88918406545423 767.6108159345458
+Including Virus-W data from Jardel et al. 2013
+Jardel systemic velocity: -287.075
+Updated effective no. of tracers (kinematic): 515.7155379855778
+Running on 10 processors
+Doing galaxy: Draco
+Number of stars per photometric bin: 30
+Number of stars per kinematic bin: 25
+Priors allow for kurtosis in the range: 2.07 < k < 6.00
+Fitting v > -75.0
+Fitting v < 75.0
+Will write output to: /vol/ph/astro_temp/jread/gravsphere/Output/Draco/Draco_*
+Fitting the surface density profile:
+
+Fitted Rhalf: 0.196149 -0.003587 +0.003654
+Fitting the velocity data:
+
+Bin: 0 | Nbin: 25.000000 | radius: 0.012736 | vztwo 12.06(11.58)+1.95-1.72 | vzfour 64261.64(70851.34)+67214.23-28163.56
+Bin: 1 | Nbin: 25.000000 | radius: 0.037260 | vztwo 10.65(9.96)+1.45-1.16 | vzfour 31457.18(24441.89)+23681.24-11662.17
+Bin: 2 | Nbin: 25.000000 | radius: 0.057822 | vztwo 8.14(7.38)+1.38-1.06 | vzfour 13008.83(10346.94)+13287.48-5526.03
+Bin: 3 | Nbin: 25.000000 | radius: 0.074259 | vztwo 7.78(7.12)+1.29-1.14 | vzfour 11722.30(10329.10)+12505.08-5358.15
+Bin: 4 | Nbin: 25.000000 | radius: 0.089919 | vztwo 10.08(9.46)+1.48-1.19 | vzfour 26682.12(22260.65)+21927.17-10834.35
+Bin: 5 | Nbin: 25.000000 | radius: 0.104194 | vztwo 9.39(8.64)+1.64-1.40 | vzfour 25382.25(24251.76)+27745.90-11440.03
+Bin: 6 | Nbin: 25.000000 | radius: 0.117027 | vztwo 8.21(7.57)+1.43-1.28 | vzfour 14394.84(16433.06)+13890.13-7127.99
+Bin: 7 | Nbin: 25.000000 | radius: 0.132427 | vztwo 9.94(9.45)+1.92-1.47 | vzfour 34152.47(32757.87)+37742.92-15671.87
+Bin: 8 | Nbin: 25.000000 | radius: 0.153302 | vztwo 8.81(8.78)+1.25-0.89 | vzfour 13912.04(12493.43)+10650.77-4809.50
+Bin: 9 | Nbin: 25.000000 | radius: 0.175847 | vztwo 9.25(8.78)+1.60-1.35 | vzfour 22121.38(21813.07)+23104.85-9699.18
+Bin: 10 | Nbin: 25.000000 | radius: 0.195690 | vztwo 8.48(8.22)+1.18-0.89 | vzfour 12372.22(10948.14)+9180.27-4445.55
+Bin: 11 | Nbin: 25.000000 | radius: 0.217091 | vztwo 7.95(7.27)+1.40-1.24 | vzfour 13125.01(13714.63)+13933.80-6234.82
+Bin: 12 | Nbin: 25.000000 | radius: 0.241287 | vztwo 11.02(10.41)+1.49-1.25 | vzfour 36460.21(31681.03)+27673.79-14160.82
+Bin: 13 | Nbin: 25.000000 | radius: 0.269206 | vztwo 9.52(8.97)+1.44-1.04 | vzfour 20644.91(18724.36)+17801.69-8136.40
+Bin: 14 | Nbin: 25.000000 | radius: 0.305806 | vztwo 10.67(10.21)+1.53-1.19 | vzfour 31612.67(29628.09)+25500.77-11898.89
+Bin: 15 | Nbin: 25.000000 | radius: 0.343979 | vztwo 9.99(9.31)+1.83-1.37 | vzfour 30009.70(34210.19)+30035.70-12719.94
+Bin: 16 | Nbin: 25.000000 | radius: 0.391866 | vztwo 9.92(9.74)+1.30-0.95 | vzfour 22964.73(21084.93)+15709.99-7882.39
+Bin: 17 | Nbin: 25.000000 | radius: 0.461327 | vztwo 9.63(9.18)+1.52-1.20 | vzfour 22498.57(21717.57)+20801.11-9587.16
+Bin: 18 | Nbin: 25.000000 | radius: 0.560554 | vztwo 11.98(11.33)+1.54-1.32 | vzfour 49609.06(40412.77)+34092.73-18137.08
+Bin: 19 | Nbin: 25.000000 | radius: 0.992896 | vztwo 9.97(9.19)+1.59-1.41 | vzfour 28554.58(27630.21)+28146.51-12618.51
+Fitted VSP1: 5016.996491+1182.848922-836.857400
+Fitted VSP2: 3254.703408+2724.142213-1260.446978
+
+Thank you for using the Binulator! Have a nice day.
+

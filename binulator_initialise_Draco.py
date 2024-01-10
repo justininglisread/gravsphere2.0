@@ -2,6 +2,9 @@ import numpy as np
 from binulator_apis import *
 from constants import * 
 
+#Run on multiprocessor:
+nprocs = 10
+
 #Data files and output base filename:
 whichgal = 'Draco'
 infile_kin = './Data/Walker_dwarfs/dra_justin1_spec.dat'
@@ -22,7 +25,7 @@ vzfourpltmax = 1e6
 #Number of stars per bin [-1 indicates that
 #binning was already done elsewhere]:
 Nbin = 30
-Nbinkin = 30
+Nbinkin = 25
 
 #Priors for surface density fit. Array values are:
 #[M1,M2,M3,a1,a2,a3] where M,a are the Plummer mass
@@ -39,14 +42,14 @@ Rfitmax = -1
 #amplitude "backamp", describing some background. The first
 #Gaussian is assumed to have mean >0; the second mean <0, hence
 #the prior range on the mean is +ve definite for both.
-p0vin_min = np.array([-20.0,5.0,1.0,\
+p0vin_min = np.array([-5.0,5.0,1.0,\
                       1e-5,20.0,30.0,\
                       1e-5,20.0,30.0])
-p0vin_max = np.array([20.0,25.0,5.0,\
+p0vin_max = np.array([5.0,25.0,5.0,\
                       1e-4,95.0,125.0,\
                       1e-4,95.0,125.0])
-vfitmin = 0
-vfitmax = 0
+vfitmin = -75.0
+vfitmax = 75.0
 Rfitvmin = -1
 Rfitvmax = -1
 
@@ -62,10 +65,11 @@ R, surfden, surfdenerr, Rhalf, \
     Rkin, vz, vzerr, mskin, vsys = \
     walker_api(infile_phot,infile_kin,dgal_kpc,Nbin)
 use_dataRhalf = 'no'
+print('Min/max velocity:', np.min(vz), np.max(vz))
 
 #Include the Virus-W inner data from:
 #https://ui.adsabs.harvard.edu/abs/2013ApJ...763...91J/abstract
-include_jardel = 'no'
+include_jardel = 'yes'
 if (include_jardel == 'yes'):
     print('Including Virus-W data from Jardel et al. 2013')
     data_jar = np.genfromtxt(infile_jardel,dtype='f8')

@@ -1,5 +1,5 @@
-:::: GRAVSPHERE + BINULATOR ::::
-Welcome to GravSphere and the binulator.
+:::: GRAVSPHERE + BINULATOR 2.0 ::::
+Welcome to GravSphere2.0 and the binulator2.0.
 
 Use the binulator (binulator.py) to bin your discrete velocity 
 and photometric data. It will then output all the files that 
@@ -11,7 +11,10 @@ python source files.
 
 :::: DEPENDENCIES ::::
 To run these codes, you will need to install:
-python3.x, numpy, scipy, matplotlib and emcee
+python3.x, numpy, scipy, matplotlib,
+emcee (https://emcee.readthedocs.io/en/stable/),
+corner (https://corner.readthedocs.io/en/latest/), and
+disSat (https://github.com/stacykim/disSat)
 
 The code has been verified to work with:
 python 3.6.3
@@ -19,7 +22,8 @@ scipy version 1.5.4
 numpy version 1.13.3
 matplotlib version 2.1.0
 emcee version 3.0rc2
-
+corner version 2.02
+disSat version 1.0
 
 :::: CITATIONS ::::
 If using this code, please cite the following code papers:
@@ -32,9 +36,9 @@ https://ui.adsabs.harvard.edu/abs/2021arXiv210211890C/abstract
 If using the J-factor integral calculation, please cite also:
 https://ui.adsabs.harvard.edu/abs/2020JCAP...09..004A/abstract
 
-Please acknowledge use of the gravsphere code and/or
-binulator, and link to its github page:
-https://github.com/justinread/gravsphere
+Please acknowledge use of the gravsphere2.0 code and/or
+binulator2.0, and link to its github page:
+https://github.com/justininglisread/gravsphere2.0
 
 If using any of the data for Milky Way dwarfs included
 in this repository, please cite the following papers:
@@ -160,5 +164,5 @@ gravsphere.py. Then you're good to go to run the code as for
 the built in examples, above.
 
 
-Justin Read | 01/02/21 
+Justin Read | 20/12/23
 

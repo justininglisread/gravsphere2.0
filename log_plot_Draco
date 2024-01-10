@@ -1,0 +1,36 @@
+nohup: ignoring input
+###### GRAVSPHERE VERSION 2.0 ######
+
+Min/max star formation length (Gyrs) 2.1000000000000014 3.1000000000000014
+Using <SFH> abundance matching prior on M200 (1e9 Msun): 0.9031659418061152 5.625939328089191
+Tidal radius found (kpc): 4.964235015989815
+Satellite mass within rt (1e9 Msun): 0.39128170012130814
+Min/max mass left based on orbit (fraction of M200): 0.06954957693335169 0.13909915386670338
+Redshift of infall based on tSF: 2.297878183528467 3.296664103779135
+Running on 10 cores
+Doing galaxy: Draco
+Model parameters:
+M200low, M200high [1e9 Msun]: 0.903165941806115 5.625939328089198
+nsig_c200low, nsig_c200high: -10.0 10.0
+mWDMlow, mWDMhigh [keV]: 0.01 1000.0
+sigmaSIlow, sigmaSIhigh [cm2/g]: 0.001 100.0
+Inner/outer radial bin (phot): 0.011516 1.202707
+Inner/outer radial bin (kin): 0.012736 0.992896
+Inner/outer radial Jeans grid: 0.0019614899999999998 9.80745 150
+Running in plotting mode ... 
+Loading data from: /vol/ph/astro_temp/jread/gravsphere/Output/Draco/VirialShape/
+Setting plot range: 0.01 5.0
+Min/max chisq: 60.65269361647388 107.48675808875231
+*******************************
+M200 -/+ 68% ::  1994668726.1982672 1248700487.6126754 3739265823.128124
+*******************************
+vmax -/+ 68% ::  31.708941743294634 27.853826066859895 37.111416649065
+*******************************
+d -/+ 68% ::  75.9999991508747 75.99999270671451 76.00000662997573
+*******************************
+Mcen -/+ 68% ::  0.0003243806232978085 0.00013533939327747496 0.0006903359955766432
+*******************************
+acen -/+ 68% ::  0.00030522404117921487 2.4036123253600365e-05 0.00350772920007122
+
+Thank you for using GravSphere! Have a nice day.
+
