@@ -49,17 +49,12 @@ intpnts = -1.0
 Mstar = 4.3e7
 Mstar_err = Mstar * 0.25
 baryonmass_follows_tracer = 'yes'
-barrad_min = 0.0
-barrad_max = 10.0
-bar_pnts = 250
-
+nurad_min = 1.0e-3
+nurad_max = 50.0
+nu_pnts = np.int(1e4)
 
 ###########################################################
 #Priors
-
-#For surface density fit tracertol = [0,1] sets the spread 
-#around the best-fit value from the binulator.
-tracertol = 0.1
 
 #Velocity anisotropy priors. If logbetr0min=logbetr0max,
 #it will be set automatically based on the half light
@@ -74,8 +69,22 @@ betinfmin = -0.1
 betinfmax = 1.0
 
 #Dark matter model priors:
+#M200option = 'abund'
+M200option = 'free'
+WDMoption = 'CDM'
+#WDMoption = 'free'
+SIDMoption = 'CDM'
+#SIDMoption = 'free'
+tideoption = 'orbit'
+#tideoption = 'free'
+#DMheatoption = 'tight'
+DMheatoption = 'free'
+#DMheatoption = 'CDM'
+zinoption = 'zero'
+outdirbase = outdirbase+M200option+WDMoption+SIDMoption+\
+             tideoption+DMheatoption+zinoption+'/'
 
-#tSF prior constrained by SF in Fornax
+#tSF constrained by SF in Fornax
 #(see Read et al. 2019):
 tSFlow = 13.8-1.75-1.0
 tSFhigh = 13.8-1.75+1.0
@@ -84,46 +93,81 @@ print('Min/max star formation length (Gyrs)', \
 
 #Set M200 prior based on abundance matching
 #(see Read & Erkal 2019):
-M200abundlow, M200abundhigh = \
-    estimate_M200abund(Mstar-Mstar_err,\
-                       Mstar+Mstar_err,tSFlow,tSFhigh)
-
-#Stretch prior a bit more (if wanted):
-M200abundhigh = M200abundhigh*2
-print('Using <SFH> abundance matching prior on M200 (1e9 Msun):', \
-            M200abundlow/1.0e9,M200abundhigh/1.0e9)
+if (M200option == 'abund'):
+    M200abundlow, M200abundhigh = \
+            estimate_M200abund(Mstar-Mstar_err,\
+                               Mstar+Mstar_err,tSFlow,tSFhigh)
+    M200abundhigh = M200abundhigh*2
+elif (M200option == 'free'):
+    M200abundlow = 1.0e9
+    M200abundhigh = 5.0e10
+print('Using prior on M200 (1e9 Msun):', \
+      M200abundlow/1.0e9,M200abundhigh/1.0e9)
 logM200low = np.log10(M200abundlow)
 logM200high = np.log10(M200abundhigh)
 nsig_c200low = -10.0
 nsig_c200high = 10.0
 
 #Cosmology priors:
-logmWDMlow = np.log10(0.01)
-logmWDMhigh = np.log10(1000)
-logsigmaSIlow = np.log10(0.001)
-logsigmaSIhigh = np.log10(100)
+if (WDMoption == 'free'):
+    logmWDMlow = np.log10(0.01)
+    logmWDMhigh = np.log10(1000)
+elif (WDMoption == 'CDM'):
+    logmWDMlow = np.log10(1.0e5)
+    logmWDMhigh = np.log10(1.0e6)
+if (SIDMoption == 'free'):
+    logsigmaSIlow = np.log10(1.0e-3)
+    logsigmaSIhigh = np.log10(1.0e3)
+elif (SIDMoption == 'CDM'):
+    logsigmaSIlow = np.log10(1.0e-6)
+    logsigmaSIhigh = np.log10(1.0e-5)        
+
+#DMheating priors. Here, mfac is a dimensionless prior
+#that determines the amount of DM heating via the ratio
+#mfac*Mstar/M200 such that mfac=1 is the default model,
+#while higher/lower mfac means more/less heating.
+if (DMheatoption == 'free'):
+    mfaclow = 0.0
+    mfachigh = 2.0
+elif (DMheatoption == 'tight'):
+    mfaclow = 0.99
+    mfachigh = 1.01
+elif (DMheatoption == 'CDM'):
+    mfaclow = 0.0
+    mfachigh = 1.0e-3
 
 #Constrain mass loss using known Fornax
-#apo and peri (from Pace et al. 22):
-rp, ra = 76.7-27.9, 152.7+9.7
-mleftmin = mleftmaxcalc(M200abundlow,rp,ra,\
-                        galmodel='MW')
-mleftmax = mleftmin*2.0
-if (mleftmax > M200abundlow):
-    mleftmax = M200abundlow
+#apo and peri (from Pace et al. 22).
+#Note that mleft parameter is in range
+#[0,1] and describes the fraction of initial
+#M200 left.
+if (tideoption == 'orbit'):
+    rp, ra = 76.7-27.9, 152.7+9.7
+    mleftmin = mleftmaxcalc(M200abundlow,rp,ra,\
+                            galmodel='MW')
+    mleftmin = mleftmin / M200abundhigh
+elif (tideoption == 'free'):
+    mleftmin = 1.0e-6
+mleftmax = 1.0
 logmleftlow = np.log10(mleftmin)
 logmlefthigh = np.log10(mleftmax)
 print('Min/max mass left based on orbit (fraction of M200):',\
-      mleftmin/M200abundhigh,mleftmax/M200abundhigh)
+      mleftmin,mleftmax)
 
 #Infall redshift fixed by tSF. For
-#isolated galaxies that are star forming today
+#isolated galaxies that are star forming today,
 #this should be a tight prior around zin=0.
 #[cosmological parameters set in constants.py]
-zinlow = redshift_from_time(tSFhigh,OmegaM,OmegaL,h)
-zinhigh = redshift_from_time(tSFlow,OmegaM,OmegaL,h)
-print('Redshift of infall based on tSF:', \
-      zinlow, zinhigh)
+if (zinoption == 'zero'):
+    zinlow = 0.0
+    zinhigh = 0.01
+    print('M200-c200 relation fixed at redshift z=0:', \
+          zinlow, zinhigh)
+elif (zinoption == 'infall'):
+    zinlow = redshift_from_time(tSFhigh,OmegaM,OmegaL,h)
+    zinhigh = redshift_from_time(tSFlow,OmegaM,OmegaL,h)
+    print('M200-c200 relation fixed by redshift of infall based on tSF:', \
+          zinlow, zinhigh)
 
 #Priors on central dark mass [set logMcenlow/high very negative
 #to switch this off. Mcen is the mass in Msun; acen is the
@@ -156,9 +200,3 @@ calc_Jfac = 'no'
 alpha_Jfac_deg = 0.5 
 calc_Dfac = 'no'
 alpha_Dfac_deg = 0.5
-
-
-
-
-
-

@@ -6,18 +6,23 @@ from constants import *
 nprocs = 10
 
 #Data files and output base filename:
-whichgal = 'Ocen'
-whichcen = 'RenAnd'
+whichgal = 'OcenM'
+#whichcen = 'RenAnd'
 #whichcen = 'RenDisp'
 #whichcen = 'RenRot'
-#whichcen = 'RenNoy08'
+whichcen = 'RenNoy08'
 #whichcen = 'RenNoy10'
 infile_phot = '../Data/Ocen/Ocen_SB_%s.txt' % (whichcen)
 infile_kin = '../Data/Ocen/Ocen_RV_rawprops_%s.txt' % (whichcen)
 infile_prop = '../Data/Ocen/Ocen_HST_Gaia_PMs_rawprops_%s.txt' % (whichcen)
-dgal_kpc = 5.0
+dgal_kpc = 5.2
 outfile = output_base+whichgal+'/dgal_%.1f/%s/' % (dgal_kpc,whichcen)+whichgal
 print('Using Omega cen distance: %.1f kpc' % (dgal_kpc))
+
+if (whichgal == 'OcenMO'):
+    infile_kin = '../Data/Ocen/Ocen_RV_MUSEonly_rawprops_%s.txt' % (whichcen)
+elif (whichgal == 'OcenM'):
+    infile_kin = '../Data/Ocen/Ocen_RV_MUSE_rawprops_%s.txt' % (whichcen)
 
 #Plot ranges:
 xpltmin = 1e-6
@@ -36,22 +41,26 @@ Nbin = -1
 #Use variable number of stars per bin:
 Nbinkin = 250.0
 Nbinkin_prop = Nbinkin
-Nbinkinarr = np.array([25.0,25.0,25.,\
-                       50.0,50.0,50.0,\
-                       100.0,100.0,100.0,\
-                       250.0,250.0,250.0,\
-                       500.0])
-Nbinkinarr_prop = np.array([100.0,100.0,100.0,\
-                            250.0,250.0,250.0,\
-                            500.0])
+Nbinkinarr = np.array([25.0,25.0,25.0,25.0,\
+                       50.0,50.0,50.0,50.0,\
+                       100.0,100.0,100.0,100.0,\
+                       200.0])
+Nbinkinarr_prop = Nbinkinarr
 
 #Priors for surface density fit. Array values are:
-#[M1,M2,M3,a1,a2,a3] where M,a are the Plummer mass
-#and scale length. [-1 means use full radial range].
-p0in_min = np.array([-10,-10,-10,0.001,0.001,0.001])
-p0in_max = np.array([10,10,10,0.05,0.05,0.05])
+#Double alp-bet-gam SB model:
+p0in_min = np.array([np.log10(1.0e-2),np.log10(1.0e-15),\
+                     np.log10(1.0e-3),np.log10(1.0e-5),\
+                     0.25,0.25,\
+                     3.1,3.1,\
+                     0.0,0.0])
+p0in_max = np.array([np.log10(1.0e7),np.log10(1.0e-14),\
+                     np.log10(1.0e-1),np.log10(1.0e-4),\
+                     10,10,\
+                     9,9,\
+                     0.25,0.25])
 Rfitmin = -1
-Rfitmax = 40.0 / 1000.0
+Rfitmax = -1
 
 #Priors for binulator velocity dispersion calculation.
 #Array values are: [vzmean,alp,bet,backamp1,backmean1,backsig1,
@@ -60,10 +69,10 @@ Rfitmax = 40.0 / 1000.0
 #amplitude "backamp", describing some background. The first
 #Gaussian is assumed to have mean >0; the second mean <0, hence
 #the prior range on the mean is +ve definite for both.
-p0vin_min = np.array([-20.0,1.0,1.0,\
+p0vin_min = np.array([-1.0e-3,1.0,1.0,\
                       1e-5,20.0,30.0,\
                       1e-5,20.0,30.0])
-p0vin_max = np.array([20.0,30.0,5.0,\
+p0vin_max = np.array([1.0e-3,30.0,5.0,\
                       1e-4,95.0,125.0,\
                       1e-4,95.0,125.0])
 vfitmin = 0
@@ -84,3 +93,7 @@ R, surfden, surfdenerr, Rhalf, \
         ocen_api(dgal_kpc,infile_phot,infile_kin,infile_prop)
 use_dataRhalf = 'no'
 propermotion = 'yes'
+
+#Output effective number of stars:
+print('Effective number of line of sight tracers:', np.sum(mskin))
+print('Effective number of proper motion tracers:', np.sum(msprop))

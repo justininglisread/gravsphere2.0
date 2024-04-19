@@ -9,13 +9,21 @@ from functions import *
 nprocs = 10
 
 #Data files and output base filename:
-whichgal = 'Ocenmock3'
+whichgal = 'Ocen_10e3_1e-3'
+
+#Set projection axis (0=x; 1=y; 2=z) and distance offset
+#from "true" value for the mock:
 axis = 2
-dgal_kpc = 5.9
-infile = output_base+whichgal+'/dgal_%.1f_%d/' % (dgal_kpc,axis)+whichgal
-outdirbase = output_base+whichgal+'/dgal_%.1f_%d/' % (dgal_kpc,axis)
-print('Using Omega cen distance: %.1f kpc' % (dgal_kpc))
+dgal_kpc_true = 5.0
+dgal_kpc_offset = 5.0
+if (whichgal == 'Ocen_10e3_1e-3'):
+    data_file = '/vol/ph/astro_data/jread/Ocen_mock/mock_omegacen_MBH_10e3_rBH_1e-3pc.dat'
+infile = output_base+whichgal+'/dgal_%.1f_%d/' % (dgal_kpc_offset,axis)+whichgal
+outdirbase = output_base+whichgal+'/dgal_%.1f_%d/' % (dgal_kpc_offset,axis)
+print('Using mock Omega cen distance of: %.1f kpc' % (dgal_kpc_offset))
+print('True Omega cen distance: %.1f kpc' % (dgal_kpc_true))
 print('Projecting along axis:', axis)
+dgal_kpc = dgal_kpc_offset
 
 #Plot ranges and sample points [-1 means auto-calculate]:
 rplot_inner = 1e-6
@@ -52,8 +60,8 @@ trueden = np.interp(ranal,dendata[:,0],dendata[:,1])
 truedlnrhodlnr = np.zeros(len(ranal))
 
 #Radial grid range for Jeans calculation:
-rmin = 1.0e-6
-rmax = 1.0
+rmin = 5.0e-6
+rmax = 5.0
 intpnts = np.int(250)
 
 #Galaxy properties. Assume here that the baryonic mass
@@ -64,29 +72,12 @@ intpnts = np.int(250)
 Mstar = 3.0e6
 Mstar_err = Mstar*0.95
 baryonmass_follows_tracer = 'yes'
-barrad_min = 1.0e-6
-barrad_max = 5.0
-bar_pnts = 5000
+nurad_min = 1.0e-6
+nurad_max = 10.0
+nu_pnts = np.int(1e4)
 
 ###########################################################
 #Priors
-
-#For surface density fit tracertol = [0,1] sets the spread 
-#around the best-fit value from the binulator.
-tracertol = 0.95
-
-#Cosmology priors on the coreNFWtides model. mWDM(keV) is
-#the mass of a thermal relic; <0 means CDM; sig_c200 is 
-#the scatter of c200 in log10 space. If the cosmo_cprior
-#is set, then we include a Gaussian spread in M200-c200 in
-#the likelihood. Without this, M200-c200 enters only if 
-#used to set the priors, below.
-cosmo_cprior = 'no'
-sig_c200 = 0.1
-mWDM = -1
-if (mWDM > 0):
-    cosmo_cfunc = lambda M200,h : \
-        cosmo_cfunc_WDM(M200,h,OmegaM,rhocrit,mWDM)
 
 #Velocity anisotropy priors. If logbetr0min=logbetr0max,
 #it will be set automatically based on the half light
@@ -94,70 +85,62 @@ if (mWDM > 0):
 logbetr0min = 0.0
 logbetr0max = 0.0
 betnmin = 1.0
-betnmax = 10.0
-bet0min = -1.0
-bet0max = 1.0
-betinfmin = -1.0
+betnmax = 3.0
+bet0min = -0.1
+bet0max = 0.1
+betinfmin = -0.1
 betinfmax = 1.0
 
-#CoreNFWtides priors:
-logM200low = 1.5
-logM200high = 10.5
-clow = 5.0
-chigh = 50.0
-rclow = 1e-3
-rchigh = 2.0
-logrclow = np.log10(rclow)
-logrchigh = np.log10(rchigh)
-nlow = 0.0
-nhigh = 1.0
+#Dark matter model priors:
+tSFlow = 13.8-12.0
+tSFhigh = 13.8-10.0
+M200abundlow = 1.0e9
+M200abundhigh = 5.0e10
+logM200low = np.log10(M200abundlow)
+logM200high = np.log10(M200abundhigh)
+nsig_c200low = -10.0
+nsig_c200high = 10.0
+logmWDMlow = np.log10(1.0e5)
+logmWDMhigh = np.log10(1.0e6)
+logsigmaSIlow = np.log10(1.0e-6)
+logsigmaSIhigh = np.log10(1.0e-5)
+mleftmax = 1.0
+mleftmin = 1.0e-6
+logmleftlow = np.log10(mleftmin)
+logmlefthigh = np.log10(mleftmax)
+mfaclow = 0.0
+mfachigh = 10.0
 
-#Use here Jacobi radius from:
-#https://ui.adsabs.harvard.edu/abs/2021MNRAS.507.1127K/abstract
-rtlow = 160.0 / 1000.0
-rthigh = 100.0
-logrtlow = np.log10(rtlow)
-logrthigh = np.log10(rthigh)
-dellow = 4.0
-delhigh = 6.0
-
-if (cosmo_cprior == 'yes'):
-    clow = 1.0
-    chigh = 100.0
+#Infall redshift fixed by tSF. For
+#isolated galaxies that are star forming today
+#this should be a tight prior around zin=0.
+#[cosmological parameters set in constants.py]
+zinlow = redshift_from_time(tSFhigh,OmegaM,OmegaL,h)
+zinhigh = redshift_from_time(tSFlow,OmegaM,OmegaL,h)
+print('Redshift of infall based on tSF:', \
+      zinlow, zinhigh)
 
 #Priors on central dark mass [set logMcenlow/high very negative
 #to switch this off. Mcen is the mass in Msun; acen is the
 #scale length in kpc, usually assumed smaller than Rhalf
 #to avoid degeneracies with the stellar mass]:
-logMcenlow = 1.0
+logMcenlow = 2.0
 logMcenhigh = 6.0
-logacenlow = -5
-logacenhigh = -2
+logacenlow = -6.0
+logacenhigh = -3.5
 
 #Priors on rotation [set Arotlow = Arothigh = 0 to switch off.
 #Arot defined s.t. vphimean^2 / (2 sigr^2) = Arot(r/Rhalf)
 #which yields linear rotation with radius. Arot = 0.5 means
 #an equal balance of rotation and pressure support at Rhalf].
-#Note that:
-#https://ui.adsabs.harvard.edu/abs/2019MNRAS.485.1460S/abstract
-#find a mean rotation amplitude of 4.27+/-0.52 km/s. At Rhalf,
-#the dispersion of Ocen is 12-14km/s. This yields Arot in the
-#range: 0.035 < Arot < 0.08:
-#Arotlow = 0.035
-#Arothigh = 0.08
-
-#Switch off rotation, however, in favour of simply adding it
-#in quadratude to the dispersion profile (usual trick):
 Arotlow = 0.0
 Arothigh = 1.0e-12
-#Arotlow = 0.0
-#Arothigh = 0.1
 
 #Priors on distance [True distance follows as:
 #dgal_kpc + drange. Not used if drangelow and
 #drangehigh are very small]:
-drangelow = -1.5
-drangehigh = 1.5
+drangelow = -1.0
+drangehigh = 1.0
 
 ###########################################################
 #Post processing options:

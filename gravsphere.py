@@ -24,9 +24,8 @@
 def lnprior_set_single(theta,n_betpars,bet0min,bet0max,\
                        betinfmin,betinfmax,\
                        logbetr0min,logbetr0max,betnmin,betnmax,\
-                       nu_components,nupars_min,nupars_max,\
                        n_mpars,logM200low,logM200high,\
-                       nsig_c200low,nsig_c200high,tSFlow,tSFhigh,\
+                       nsig_c200low,nsig_c200high,mfaclow,mfachigh,\
                        logmWDMlow,logmWDMhigh,logsigmaSIlow,logsigmaSIhigh,\
                        logmleftlow,logmlefthigh,zinlow,zinhigh,\
                        logMcenlow,logMcenhigh,\
@@ -47,30 +46,28 @@ def lnprior_set_single(theta,n_betpars,bet0min,bet0max,\
     minarr[3] = betnmin
     maxarr[3] = betnmax
 
-    minarr[n_betpars:n_betpars+nu_components*2] = nupars_min
-    maxarr[n_betpars:n_betpars+nu_components*2] = nupars_max
-    minarr[n_betpars+nu_components*2] = logM200low
-    maxarr[n_betpars+nu_components*2] = logM200high
-    minarr[n_betpars+nu_components*2+1] = nsig_c200low
-    maxarr[n_betpars+nu_components*2+1] = nsig_c200high
-    minarr[n_betpars+nu_components*2+2] = tSFlow
-    maxarr[n_betpars+nu_components*2+2] = tSFhigh
-    minarr[n_betpars+nu_components*2+3] = logmWDMlow
-    maxarr[n_betpars+nu_components*2+3] = logmWDMhigh
-    minarr[n_betpars+nu_components*2+4] = logsigmaSIlow
-    maxarr[n_betpars+nu_components*2+4] = logsigmaSIhigh
-    minarr[n_betpars+nu_components*2+5] = logmleftlow
-    maxarr[n_betpars+nu_components*2+5] = logmlefthigh
-    minarr[n_betpars+nu_components*2+6] = zinlow
-    maxarr[n_betpars+nu_components*2+6] = zinhigh
-    minarr[n_betpars+nu_components*2+7] = logMcenlow
-    maxarr[n_betpars+nu_components*2+7] = logMcenhigh
-    minarr[n_betpars+nu_components*2+8] = logacenlow
-    maxarr[n_betpars+nu_components*2+8] = logacenhigh
-    minarr[n_betpars+nu_components*2+9] = Arotlow
-    maxarr[n_betpars+nu_components*2+9] = Arothigh
-    minarr[n_betpars+nu_components*2+10] = drangelow
-    maxarr[n_betpars+nu_components*2+10] = drangehigh
+    minarr[n_betpars] = logM200low
+    maxarr[n_betpars] = logM200high
+    minarr[n_betpars+1] = nsig_c200low
+    maxarr[n_betpars+1] = nsig_c200high
+    minarr[n_betpars+2] = mfaclow
+    maxarr[n_betpars+2] = mfachigh
+    minarr[n_betpars+3] = logmWDMlow
+    maxarr[n_betpars+3] = logmWDMhigh
+    minarr[n_betpars+4] = logsigmaSIlow
+    maxarr[n_betpars+4] = logsigmaSIhigh
+    minarr[n_betpars+5] = logmleftlow
+    maxarr[n_betpars+5] = logmlefthigh
+    minarr[n_betpars+6] = zinlow
+    maxarr[n_betpars+6] = zinhigh
+    minarr[n_betpars+7] = logMcenlow
+    maxarr[n_betpars+7] = logMcenhigh
+    minarr[n_betpars+8] = logacenlow
+    maxarr[n_betpars+8] = logacenhigh
+    minarr[n_betpars+9] = Arotlow
+    maxarr[n_betpars+9] = Arothigh
+    minarr[n_betpars+10] = drangelow
+    maxarr[n_betpars+10] = drangehigh
     minarr[ndims-1] = Mstar_min
     maxarr[ndims-1] = Mstar_max
 
@@ -79,92 +76,69 @@ def lnprior_set_single(theta,n_betpars,bet0min,bet0max,\
         return 0.0
     return -np.inf
 
-def lnprob_single(theta,x1,x2,y1,y1err,y2,y2err):
+def lnprob_single(theta,x2,y2,y2err):
     lp = lnprior(theta)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + lnlike(theta,x1,x2,y1,y1err,y2,y2err)
+    return lp + lnlike(theta,x2,y2,y2err)
 
-def lnprob_single_vs(theta,x1,x2,y1,y1err,\
-                     y2,y2err,\
+def lnprob_single_vs(theta,x2,y2,y2err,\
                      vsp1val,vsp1pdf,vsp2val,vsp2pdf):
     lp = lnprior(theta)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + lnlike(theta,x1,x2,y1,y1err,\
-                       y2,y2err,\
+    return lp + lnlike(theta,x2,y2,y2err,\
                        vsp1val,vsp1pdf,vsp2val,vsp2pdf)
 
-def lnprob_single_prop(theta,x1,x2,x3,y1,y1err,\
+def lnprob_single_prop(theta,x2,x3,\
                        y2,y2err,y3,y3err,y4,y4err):
     lp = lnprior(theta)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + lnlike(theta,x1,x2,x3,y1,y1err,\
+    return lp + lnlike(theta,x2,x3,\
                        y2,y2err,y3,y3err,y4,y4err)
 
-def lnprob_single_prop_vs(theta,x1,x2,x3,y1,y1err,\
+def lnprob_single_prop_vs(theta,x2,x3,\
                           y2,y2err,y3,y3err,y4,y4err,\
                           vsp1val,vsp1pdf,vsp2val,vsp2pdf):
     lp = lnprior(theta)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + lnlike(theta,x1,x2,x3,y1,y1err,\
+    return lp + lnlike(theta,x2,x3,\
                        y2,y2err,y3,y3err,y4,y4err,\
                        vsp1val,vsp1pdf,vsp2val,vsp2pdf)
 
-def lnlike_single(theta,x1,x2,y1,y1err,y2,y2err):
+def lnlike_single(theta,x2,y2,y2err):
     betpars = theta[0:n_betpars]
-    nupars = theta[n_betpars:n_betpars+nu_components*2]
-    Mpars = theta[n_betpars+nu_components*2:\
-                  n_betpars+nu_components*2+n_mpars]
-    Arot = theta[n_betpars+nu_components*2+n_mpars]
-    drange = theta[n_betpars+nu_components*2+n_mpars+1]
+    Mpars = theta[n_betpars:\
+                  n_betpars+n_mpars]
+    Arot = theta[n_betpars+n_mpars]
+    drange = theta[n_betpars+n_mpars+1]
     duse = dgal_kpc + drange
     Mstar = theta[ndim-1]
-    nuparsu = np.array(nupars)
     Mparsu = np.array(Mpars)
     Mparsu[0] = 10.**Mpars[0]
+    Mparsu[2] = Mpars[2]*Mstar
     Mparsu[3] = 10.**Mpars[3]
     Mparsu[4] = 10.**Mpars[4]
     Mparsu[5] = 10.**Mpars[5]
     Mparsu[7] = 10.**Mpars[7]
     Mparsu[8] = 10.**Mpars[8]
 
-    #Add dummy data points for low and high x1
-    #to ensure +ve definite surface density
-    #if using negative Plummer components:
-    if (nuparsu[0] < 0 or nuparsu[1] < 0 or nuparsu[2] < 0):
-        x1, y1, y1err = Sig_addpnts(x1,y1,y1err)
-    
-    sigr2, Sig, sigLOS2 = \
-        sigp_fit(x1*duse/dgal_kpc,x2*duse/dgal_kpc,\
-                 nuparsu,Mparsu,betpars,Mstar,Arot)
+    sigr2, sigLOS2 = \
+        sigp_fit(x2*duse/dgal_kpc,\
+                 Mparsu,betpars,Mstar,Arot)
 
-    #And now, shrink the error wherever the
-    #total density is negative to disfavour
-    #those models (see binulator_surffuncs.py
-    #for details):
-    if (nuparsu[0] < 0 or nuparsu[1] < 0 or nuparsu[2] < 0):
-        if (np.min(Sig) < 0):
-            y1err[np.where(Sig < 0)] = \
-                np.min(y1err)/np.float(len(x1))/1.0e3
-        
     #Handle distance uncertainty. Convert distances to
     #angle units before doing model-data comparison:
-    x1u = x1 / dgal_kpc
     x2u = x2 / dgal_kpc
             
     #And convert model to angel units, but using
     #new rather than default distance:
-    model1 = Sig
     model2 = np.sqrt(sigLOS2)/1000.
-
-    inv_sigma2_1 = 1.0/y1err**2
     inv_sigma2_2 = 1.0/y2err**2
 
-    lnlike_out = -0.5*(np.sum((y1-model1)**2*inv_sigma2_1)+\
-                       np.sum((y2-model2)**2*inv_sigma2_2))
+    lnlike_out = -0.5*np.sum((y2-model2)**2*inv_sigma2_2)
 
     #Add the conc. to the likelihood function
     #as a Gaussian in logspace:
@@ -177,66 +151,44 @@ def lnlike_single(theta,x1,x2,y1,y1err,y2,y2err):
 
     return lnlike_out
 
-def lnlike_single_vs(theta,x1,x2,y1,y1err,y2,y2err,\
+def lnlike_single_vs(theta,x2,y2,y2err,\
                      vsp1val,vsp1pdf,vsp2val,vsp2pdf):
     betpars = theta[0:n_betpars]
-    nupars = theta[n_betpars:n_betpars+nu_components*2]
-    Mpars = theta[n_betpars+nu_components*2:\
-                  n_betpars+nu_components*2+n_mpars]
-    Arot = theta[n_betpars+nu_components*2+n_mpars]
-    drange = theta[n_betpars+nu_components*2+n_mpars+1]
+    Mpars = theta[n_betpars:\
+                  n_betpars+n_mpars]
+    Arot = theta[n_betpars+n_mpars]
+    drange = theta[n_betpars+n_mpars+1]
     duse = dgal_kpc + drange
     Mstar = theta[ndim-1]
-    nuparsu = np.array(nupars)
     Mparsu = np.array(Mpars)
     Mparsu[0] = 10.**Mpars[0]
+    Mparsu[2] = Mpars[2]*Mstar
     Mparsu[3] = 10.**Mpars[3]
     Mparsu[4] = 10.**Mpars[4]
     Mparsu[5] = 10.**Mpars[5]
     Mparsu[7] = 10.**Mpars[7]
     Mparsu[8] = 10.**Mpars[8]
     
-    #Add dummy data points for low and high x1
-    #to ensure +ve definite surface density
-    #if using negative Plummer components:
-    if (nuparsu[0] < 0 or nuparsu[1] < 0 or nuparsu[2] < 0):
-        x1, y1, y1err = Sig_addpnts(x1,y1,y1err)
+    sigr2, sigLOS2, vs1, vs2 = \
+        sigp_fit_vs(x2*duse/dgal_kpc,\
+                    Mparsu,betpars,Mstar,Arot)
     
-    sigr2, Sig, sigLOS2, vs1, vs2 = \
-        sigp_fit_vs(x1*duse/dgal_kpc,x2*duse/dgal_kpc,\
-                    nuparsu,Mparsu,betpars,Mstar,Arot)
-    
-    #And now, shrink the error wherever the
-    #total density is negative to disfavour
-    #those models (see binulator_surffuncs.py
-    #for details):
-    if (nuparsu[0] < 0 or nuparsu[1] < 0 or nuparsu[2] < 0):
-        if (np.min(Sig) < 0):
-            y1err[np.where(Sig < 0)] = \
-                  np.min(y1err)/np.float(len(x1))/1.0e3
-
     #Handle distance uncertainty. Convert distances to
     #angle units before doing model-data comparison:
-    x1u = x1 / dgal_kpc
     x2u = x2 / dgal_kpc
     
     #And convert model to angle units, but using
     #new rather than default distance:
-    model1 = Sig
     model2 = np.sqrt(sigLOS2)/1000.
     model3 = vs1/1.0e12
     model4 = vs2/1.0e12
-
-    inv_sigma2_1 = 1.0/y1err**2
     inv_sigma2_2 = 1.0/y2err**2
 
     if (novsptwo == 'yes'):
-        lnlike_out = -0.5*(np.sum((y1-model1)**2*inv_sigma2_1)+\
-                           np.sum((y2-model2)**2*inv_sigma2_2))+\
+        lnlike_out = -0.5*(np.sum((y2-model2)**2*inv_sigma2_2))+\
                            np.log(vsp_pdf(model3,vsp1val,vsp1pdf))
     else:
-        lnlike_out = -0.5*(np.sum((y1-model1)**2*inv_sigma2_1)+\
-                           np.sum((y2-model2)**2*inv_sigma2_2))+\
+        lnlike_out = -0.5*(np.sum((y2-model2)**2*inv_sigma2_2))+\
                            np.log(vsp_pdf(model3,vsp1val,vsp1pdf))+\
                            np.log(vsp_pdf(model4,vsp2val,vsp2pdf))
 
@@ -248,50 +200,33 @@ def lnlike_single_vs(theta,x1,x2,y1,y1err,y2,y2err,\
 
     if (lnlike_out != lnlike_out):
         lnlike_out = -np.inf
-
+        
     return lnlike_out
 
-def lnlike_single_prop(theta,x1,x2,x3,y1,y1err,y2,y2err,\
+def lnlike_single_prop(theta,x2,x3,y2,y2err,\
                        y3,y3err,y4,y4err):
     betpars = theta[0:n_betpars]
-    nupars = theta[n_betpars:n_betpars+nu_components*2]
-    Mpars = theta[n_betpars+nu_components*2:\
-                  n_betpars+nu_components*2+n_mpars]
-    Arot = theta[n_betpars+nu_components*2+n_mpars]
-    drange = theta[n_betpars+nu_components*2+n_mpars+1]
+    Mpars = theta[n_betpars:\
+                  n_betpars+n_mpars]
+    Arot = theta[n_betpars+n_mpars]
+    drange = theta[n_betpars+n_mpars+1]
     duse = dgal_kpc + drange
     Mstar = theta[ndim-1]
-    nuparsu = np.array(nupars)
     Mparsu = np.array(Mpars)
     Mparsu[0] = 10.**Mpars[0]
+    Mparsu[2] = Mpars[2]*Mstar
     Mparsu[3] = 10.**Mpars[3]
     Mparsu[4] = 10.**Mpars[4]
     Mparsu[5] = 10.**Mpars[5]
     Mparsu[7] = 10.**Mpars[7]
     Mparsu[8] = 10.**Mpars[8]
     
-    #Add dummy data points for low and high x1
-    #to ensure +ve definite surface density
-    #if using negative Plummer components:
-    if (nuparsu[0] < 0 or nuparsu[1] < 0 or nuparsu[2] < 0):
-        x1, y1, y1err = Sig_addpnts(x1,y1,y1err)
-
-    sigr2, Sig, sigLOS2, sigpmr2, sigpmt2 = \
-        sigp_fit_prop(x1*duse/dgal_kpc,x2*duse/dgal_kpc,x3*duse/dgal_kpc,\
-                      nuparsu,Mparsu,betpars,Mstar,Arot)
-
-    #And now, shrink the error wherever the
-    #total density is negative to disfavour
-    #those models (see binulator_surffuncs.py
-    #for details):
-    if (nuparsu[0] < 0 or nuparsu[1] < 0 or nuparsu[2] < 0):
-        if (np.min(Sig) < 0):
-            y1err[np.where(Sig < 0)] = \
-                  np.min(y1err)/np.float(len(x1))/1.0e3
-
+    sigr2, sigLOS2, sigpmr2, sigpmt2 = \
+        sigp_fit_prop(x2*duse/dgal_kpc,x3*duse/dgal_kpc,\
+                      Mparsu,betpars,Mstar,Arot)
+    
     #Handle distance uncertainty. Convert distances to
     #angle units before doing model-data comparison:
-    x1u = x1 / dgal_kpc
     x2u = x2 / dgal_kpc
     x3u = x3 / dgal_kpc
     y3u = y3 / dgal_kpc
@@ -301,18 +236,14 @@ def lnlike_single_prop(theta,x1,x2,x3,y1,y1err,y2,y2err,\
 
     #And convert model to angle units, but using
     #new rather than default distance:
-    model1 = Sig
     model2 = np.sqrt(sigLOS2)/1000.
     model3 = np.sqrt(sigpmr2)/1000. / duse
     model4 = np.sqrt(sigpmt2)/1000. / duse
-
-    inv_sigma2_1 = 1.0/y1err**2
     inv_sigma2_2 = 1.0/y2err**2
     inv_sigma2_3 = 1.0/y3erru**2
     inv_sigma2_4 = 1.0/y4erru**2
 
-    lnlike_out = -0.5*(np.sum((y1-model1)**2*inv_sigma2_1)+\
-                       np.sum((y2-model2)**2*inv_sigma2_2)+\
+    lnlike_out = -0.5*(np.sum((y2-model2)**2*inv_sigma2_2)+\
                        np.sum((y3u-model3)**2*inv_sigma2_3)+\
                        np.sum((y4u-model4)**2*inv_sigma2_4))
 
@@ -327,48 +258,31 @@ def lnlike_single_prop(theta,x1,x2,x3,y1,y1err,y2,y2err,\
     
     return lnlike_out
 
-def lnlike_single_prop_vs(theta,x1,x2,x3,y1,y1err,y2,y2err,\
+def lnlike_single_prop_vs(theta,x2,x3,y2,y2err,\
                           y3,y3err,y4,y4err,\
                           vsp1val,vsp1pdf,vsp2val,vsp2pdf):
     betpars = theta[0:n_betpars]
-    nupars = theta[n_betpars:n_betpars+nu_components*2]
-    Mpars = theta[n_betpars+nu_components*2:\
-                  n_betpars+nu_components*2+n_mpars]
-    Arot = theta[n_betpars+nu_components*2+n_mpars]
-    drange = theta[n_betpars+nu_components*2+n_mpars+1]
+    Mpars = theta[n_betpars:\
+                  n_betpars+n_mpars]
+    Arot = theta[n_betpars+n_mpars]
+    drange = theta[n_betpars+n_mpars+1]
     duse = dgal_kpc + drange
     Mstar = theta[ndim-1]
-    nuparsu = np.array(nupars)
     Mparsu = np.array(Mpars)
     Mparsu[0] = 10.**Mpars[0]
+    Mparsu[2] = Mpars[2]*Mstar
     Mparsu[3] = 10.**Mpars[3]
     Mparsu[4] = 10.**Mpars[4]
     Mparsu[5] = 10.**Mpars[5]
     Mparsu[7] = 10.**Mpars[7]
     Mparsu[8] = 10.**Mpars[8]
 
-    #Add dummy data points for low and high x1
-    #to ensure +ve definite surface density
-    #if using negative Plummer components:
-    if (nuparsu[0] < 0 or nuparsu[1] < 0 or nuparsu[2] < 0):
-        x1, y1, y1err = Sig_addpnts(x1,y1,y1err)
+    sigr2, sigLOS2, sigpmr2, sigpmt2, vs1, vs2 = \
+        sigp_fit_prop_vs(x2*duse/dgal_kpc,x3*duse/dgal_kpc,\
+                         Mparsu,betpars,Mstar,Arot)
 
-    sigr2, Sig, sigLOS2, sigpmr2, sigpmt2, vs1, vs2 = \
-        sigp_fit_prop_vs(x1*duse/dgal_kpc,x2*duse/dgal_kpc,x3*duse/dgal_kpc,\
-                         nuparsu,Mparsu,betpars,Mstar,Arot)
-
-    #And now, shrink the error wherever the
-    #total density is negative to disfavour
-    #those models (see binulator_surffuncs.py
-    #for details):
-    if (nuparsu[0] < 0 or nuparsu[1] < 0 or nuparsu[2] < 0):
-        if (np.min(Sig) < 0):
-            y1err[np.where(Sig < 0)] = \
-                  np.min(y1err)/np.float(len(x1))/1.0e3
-            
     #Handle distance uncertainty. Convert distances to
     #angle units before doing model-data comparison:
-    x1u = x1 / dgal_kpc
     x2u = x2 / dgal_kpc
     x3u = x3 / dgal_kpc
     y3u = y3 / dgal_kpc
@@ -378,43 +292,36 @@ def lnlike_single_prop_vs(theta,x1,x2,x3,y1,y1err,y2,y2err,\
     
     #And convert model to angle units, but using
     #new rather than default distance:                                                        
-    model1 = Sig
     model2 = np.sqrt(sigLOS2)/1000.
     model3 = np.sqrt(sigpmr2)/1000. / duse
     model4 = np.sqrt(sigpmt2)/1000. / duse
     model5 = vs1/1.0e12
     model6 = vs2/1.0e12
-    
-    inv_sigma2_1 = 1.0/y1err**2
     inv_sigma2_2 = 1.0/y2err**2
     inv_sigma2_3 = 1.0/y3erru**2
     inv_sigma2_4 = 1.0/y4erru**2
 
     if (novsptwo == 'yes'):
         if (propnoprop == 'yes'):
-            lnlike_out = -0.5*(np.sum((y1-model1)**2*inv_sigma2_1)+\
-                               np.sum((y2-model2)**2*inv_sigma2_2))+\
+            lnlike_out = -0.5*(np.sum((y2-model2)**2*inv_sigma2_2))+\
                                np.log(vsp_pdf(model5,vsp1val,vsp1pdf))
         else:
-            lnlike_out = -0.5*(np.sum((y1-model1)**2*inv_sigma2_1)+\
-                               np.sum((y2-model2)**2*inv_sigma2_2)+\
+            lnlike_out = -0.5*(np.sum((y2-model2)**2*inv_sigma2_2)+\
                                np.sum((y3u-model3)**2*inv_sigma2_3)+\
                                np.sum((y4u-model4)**2*inv_sigma2_4))+\
                                np.log(vsp_pdf(model5,vsp1val,vsp1pdf))
     else:
         if (propnoprop == 'yes'):
-            lnlike_out = -0.5*(np.sum((y1-model1)**2*inv_sigma2_1)+\
-                           np.sum((y2-model2)**2*inv_sigma2_2))+\
-                           np.log(vsp_pdf(model5,vsp1val,vsp1pdf))+\
-                           np.log(vsp_pdf(model6,vsp2val,vsp2pdf))
+            lnlike_out = -0.5*(np.sum((y2-model2)**2*inv_sigma2_2))+\
+                         np.log(vsp_pdf(model5,vsp1val,vsp1pdf))+\
+                         np.log(vsp_pdf(model6,vsp2val,vsp2pdf))
         else:
-            lnlike_out = -0.5*(np.sum((y1-model1)**2*inv_sigma2_1)+\
-                               np.sum((y2-model2)**2*inv_sigma2_2)+\
+            lnlike_out = -0.5*(np.sum((y2-model2)**2*inv_sigma2_2)+\
                                np.sum((y3u-model3)**2*inv_sigma2_3)+\
                                np.sum((y4u-model4)**2*inv_sigma2_4))+\
                                np.log(vsp_pdf(model5,vsp1val,vsp1pdf))+\
                                np.log(vsp_pdf(model6,vsp2val,vsp2pdf))
-                               
+
     #Add the conc. to the likelihood function
     #as a Gaussian in logspace:
     nsig_c200 = Mparsu[1]
@@ -466,10 +373,10 @@ nprocs = 1
 #Code parameters:
 datadir = './Data/'
 nwalkers = 250
-nmodels = 2500
+nmodels = 10000
 
 #Codemode [run or plot]:
-codemode = 'run'
+codemode = 'plot'
 if (codemode != 'run' and codemode !='plot'):
     print("Oops. Attempting to run in an unknown '%s' mode. You can only run in 'run' mode which runs the fitting routines, or 'plot' mode that plots the output from the fitting routines. Please try again. Bye!" % (codemode))
     sys.exit(0)
@@ -493,11 +400,11 @@ propnoprop = 'no'
 #from gravsphere_initialise_LeoII import *
 #from gravsphere_initialise_Sextans import *
 #from gravsphere_initialise_Sculptor import *
-from gravsphere_initialise_Fornax import *
+#from gravsphere_initialise_Fornax import *
 #from gravsphere_initialise_CVnI import *
 #from gravsphere_initialise_SegI import *
 #from gravsphere_initialise_SMC import *
-#from gravsphere_initialise_Ocen import *
+from gravsphere_initialise_Ocen import *
 
 #Mocks:
 #from gravsphere_initialise_PlumCoreOm import *
@@ -537,11 +444,6 @@ if (virialshape == 'yes'):
 
 #Set tracer model and vel. ani. functions:
 n_betpars = 4
-nu = multiplumden
-nu_components = 3
-Sigfunc = multiplumsurf
-n_nupars = nu_components * 2
-
 if (propermotion == 'no'):
     if (virialshape == 'no'):
         lnlike = lnlike_single
@@ -578,6 +480,8 @@ surfden = data[:,1]
 surfdenerr = data[:,2]
 data = np.genfromtxt(infile+'_vel.txt',dtype='f8')
 rbin_kin = data[:,0]
+vlosmean = data[:,1]
+vlosmeanerr = (data[:,3]-data[:,2])/2.0
 sigpmean = data[:,4]
 sigperr = (data[:,6]-data[:,5])/2.0
 data = np.genfromtxt(infile+'_vsps.txt',dtype='f8')
@@ -594,17 +498,45 @@ vsp1val, vsp1pdf = vsppdf_calc(data)
 data = np.genfromtxt(infile+'_vsp2full.txt',dtype='f8')
 vsp2val, vsp2pdf = vsppdf_calc(data)
 
+#Check if there is a significant velocity gradient
+#and, if so, output warning to add in quadrature:
+index = np.argsort(np.abs(vlosmean))
+maxrot = np.abs(vlosmean[index[-1]])/np.abs(vlosmeanerr[index[-1]])
+rotconcern = maxrot/sigpmean[index[-1]]
+print('Consider: 1) adding vlosmean in quadrature to sigplos; OR 2) rerunning binulator with a tight ~zero prior on vmean; OR 3) modelling rotation through the "Arot" parameter, if rotconcern approaches unity. Here rotconcern = ',\
+      rotconcern)
+
 if (propermotion == 'yes'):
     data = np.genfromtxt(infile+'_velproptan.txt',dtype='f8')
     rbin_kinp = data[:,0]
     sigpmt = data[:,4]
     sigpmterr = (data[:,6]-data[:,5])/2.0
 
+    #Check if there is a significant velocity gradient
+    #and, if so, output warning to add in quadrature:
+    vmean = data[:,1]
+    vmeanerr = (data[:,3]-data[:,2])/2.0
+    index = np.argsort(np.abs(vmean))
+    maxrot = np.abs(vmean[index[-1]])/np.abs(vmeanerr[index[-1]])
+    rotconcern = maxrot/sigpmt[index[-1]]
+    print('Rotconcern along tangential propermotion direction = ',\
+          rotconcern)
+    
     data = np.genfromtxt(infile+'_velpropR.txt',dtype='f8')
     rbin_kinp2 = data[:,0]
     sigpmr = data[:,4]
     sigpmrerr = (data[:,6]-data[:,5])/2.0
 
+    #Check if there is a significant velocity gradient
+    #and, if so, output warning to add in quadrature:
+    vmean = data[:,1]
+    vmeanerr = (data[:,3]-data[:,2])/2.0
+    index = np.argsort(np.abs(vmean))
+    maxrot = np.abs(vmean[index[-1]])/np.abs(vmeanerr[index[-1]])
+    rotconcern = maxrot/sigpmr[index[-1]]
+    print('Rotconcern along radial propermotion direction = ',\
+          rotconcern)
+    
     #Check data:
     if (np.sum(rbin_kinp-rbin_kinp2) != 0):
         print('Need same radial binning for tangential and radial propermotions. Oops! Bye bye.')
@@ -615,6 +547,20 @@ print('Inner/outer radial bin (phot):', \
 print('Inner/outer radial bin (kin):', \
     np.min(rbin_kin),np.max(rbin_kin))
 
+#Set up the tracer profile (this will be
+#interpolated over later):
+if (nurad_min == 0):
+    print('WARNING tracer density radial range parameter %f should be >0. Bye bye.' % (nurad_min))
+    sys.exit(0)
+nu_rad = np.logspace(np.log10(nurad_min),\
+                     np.log10(nurad_max),np.int(nu_pnts))
+nu_den = doublealpbetgamden(nu_rad,pfits[0],pfits[1],pfits[2],\
+                            pfits[3],pfits[4],pfits[5],pfits[6],\
+                            pfits[7],pfits[8],pfits[9])
+nu_surf = doublealpbetgamsurf_acc(nu_rad,pfits[0],pfits[1],pfits[2],\
+                                  pfits[3],pfits[4],pfits[5],pfits[6],\
+                                  pfits[7],pfits[8],pfits[9])
+
 #Set up the baryonic mass profile. If this is
 #not assumed to have the same radial profile
 #as the tracer stars, then it must be set, above,
@@ -623,15 +569,13 @@ print('Inner/outer radial bin (kin):', \
 #when multiplied by Mstar, it yields the total
 #stellar mass.
 if (baryonmass_follows_tracer == 'yes'):
-    if (barrad_min == 0):
-        barrad_min = 1.0e-3
-    Mstar_rad = np.logspace(np.log10(barrad_min),\
-        np.log10(barrad_max),np.int(bar_pnts))
-    norm = pfits[0] + pfits[1] + pfits[2]
+    Mstar_rad = nu_rad
     Mstar_prof = \
-        threeplummass(Mstar_rad,pfits[0]/norm,\
-                      pfits[1]/norm,pfits[2]/norm,\
-                      pfits[3],pfits[4],pfits[5])
+        doublealpbetgammass(Mstar_rad,pfits[0],\
+                            pfits[1],pfits[2],pfits[3],\
+                            pfits[4],pfits[5],pfits[6],\
+                            pfits[7],pfits[8],pfits[9])
+    Mstar_prof = Mstar_prof / np.max(Mstar_prof)
 
 #Set beta scale radius based on Rhalf:
 if (logbetr0min == logbetr0max):
@@ -650,20 +594,21 @@ print('Inner/outer radial Jeans grid:', rmin, rmax, intpnts)
 #the disSat package by S. Kim. Parameters and details
 #here: https://github.com/stacykim/disSat/.
 M = lambda r, Mpars: \
-    cosmo_profile_mass(r,Mpars[0],Mpars[1],Mpars[2],\
+    cosmo_profile_mass(r,Mpars[0],Mpars[1],Mpars[2],Rhalf,\
                        Mpars[3],Mpars[4],Mpars[5],\
                        Mpars[6])
 rho = lambda r, Mpars: \
-    cosmo_profile_den(r,Mpars[0],Mpars[1],Mpars[2],\
+    cosmo_profile_den(r,Mpars[0],Mpars[1],Mpars[2],Rhalf,\
                       Mpars[3],Mpars[4],Mpars[5],\
                       Mpars[6])
 dlnrhodlnr = lambda r, Mpars: \
-    cosmo_profile_dlnrhodlnr(r,Mpars[0],Mpars[1],Mpars[2],\
+    cosmo_profile_dlnrhodlnr(r,Mpars[0],Mpars[1],Mpars[2],Rhalf,\
                              Mpars[3],Mpars[4],Mpars[5],\
                              Mpars[6])
+
 #Central dark mass:
 Mcentral = lambda r, Mpars: \
-           plummass(r,Mpars[6:8])
+           plummass(r,Mpars[7:9])
 n_mpars = 9
 
 #Set min/max priors on the stellar mass:                        
@@ -675,51 +620,26 @@ Mstar_max = Mstar + Mstar_err
 #varying stellar mass to light ratio (+1)
 #varying distance (+1)
 #varying rotation parameter (+1)
-ndim = n_betpars + n_nupars + n_mpars + 3
+ndim = n_betpars + n_mpars + 3
 if (propermotion == 'no'):
     if (virialshape == 'no'):
-        sigp_fit = lambda r1,r2,nupars,Mpars,betpars,Mstar,Arot: \
-            sigp(r1,r2,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,betpars,\
+        sigp_fit = lambda r2,Mpars,betpars,Mstar,Arot: \
+            sigp(r2,M,Mcentral,beta,betaf,Mpars,betpars,nu_rad,nu_den,nu_surf,\
                  Mstar_rad,Mstar_prof,Mstar,Arot,Rhalf,Guse,rmin,rmax,intpnts)
     else:
-        sigp_fit_vs = lambda r1,r2,nupars,Mpars,betpars,Mstar,Arot: \
-            sigp_vs(r1,r2,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,betpars,\
+        sigp_fit_vs = lambda r2,Mpars,betpars,Mstar,Arot: \
+            sigp_vs(r2,M,Mcentral,beta,betaf,Mpars,betpars,nu_rad,nu_den,nu_surf,\
                     Mstar_rad,Mstar_prof,Mstar,Arot,Rhalf,Guse,rmin,rmax,intpnts)
 elif (propermotion == 'yes'):
     if (virialshape == 'no'):
-        sigp_fit_prop = lambda r1,r2,r3,nupars,Mpars,betpars,Mstar,Arot: \
-            sigp_prop(r1,r2,r3,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,betpars,\
+        sigp_fit_prop = lambda r2,r3,Mpars,betpars,Mstar,Arot: \
+            sigp_prop(r2,r3,M,Mcentral,beta,betaf,Mpars,betpars,nu_rad,nu_den,nu_surf,\
                       Mstar_rad,Mstar_prof,Mstar,Arot,Rhalf,Guse,rmin,rmax,intpnts)
     else:
-        sigp_fit_prop_vs = lambda r1,r2,r3,nupars,Mpars,betpars,Mstar,Arot: \
-            sigp_prop_vs(r1,r2,r3,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,betpars,\
+        sigp_fit_prop_vs = lambda r2,r3,Mpars,betpars,Mstar,Arot: \
+            sigp_prop_vs(r2,r3,M,Mcentral,beta,betaf,Mpars,betpars,nu_rad,nu_den,nu_surf,\
                          Mstar_rad,Mstar_prof,Mstar,Arot,Rhalf,Guse,rmin,rmax,intpnts)
 
-#Set the priors and starting blob for the tracer density profile.
-#Code is a bit more involved here just to cope with potentially
-#negative Plummer masses, used to fit some steeply falling tracer
-#density profiles:
-nupars_min = np.zeros(len(pfits))
-nupars_max = np.zeros(len(pfits))
-nupars_minstart = np.zeros(len(pfits))
-nupars_maxstart = np.zeros(len(pfits))
-for i in range(len(pfits)):
-    if (pfits[i] > 0):
-        nupars_min[i] = pfits[i]*(1.0-tracertol)
-        nupars_max[i] = pfits[i]*(1.0+tracertol)
-    else:
-        nupars_min[i] = pfits[i]*(1.0+tracertol)
-        nupars_max[i] = pfits[i]*(1.0-tracertol)
-    if (tracertol < 0.01):
-        nupars_minstart[i] = nupars_min[i]
-        nupars_maxstart[i] = nupars_max[i]
-    else:
-        if (pfits[i] > 0):
-            nupars_minstart[i] = pfits[i]*0.99
-            nupars_maxstart[i] = pfits[i]*1.01
-        else:
-            nupars_minstart[i] = pfits[i]*1.01
-            nupars_maxstart[i] = pfits[i]*0.99
 
 ###########################################################
 #Emcee fitting code:
@@ -730,108 +650,66 @@ if (codemode == 'run'):
     print('Will write output to:', outdir)
     
     #Initialise the walkers:
-#    walkermode = 'safe'
-    walkermode = 'fast'
-    
-    if (walkermode == 'safe'):
-        pos = np.zeros((nwalkers, ndim), dtype='float')
-        pos[:,0] = np.random.uniform(bet0min,bet0max,nwalkers)
-        pos[:,1] = np.random.uniform(betinfmin,betinfmax,nwalkers)
-        pos[:,2] = np.random.uniform(logbetr0min,logbetr0max,nwalkers)
-        pos[:,3] = np.random.uniform(betnmin,betnmax,nwalkers)
-        for i in range(len(pfits)):
-            pos[:,n_betpars+i] = \
-                    np.random.uniform(nupars_minstart[i],\
-                                      nupars_maxstart[i],nwalkers)
-        pos[:,n_betpars+nu_components*2] = \
-                np.random.uniform(logM200low,logM200high,nwalkers)
-        pos[:,n_betpars+nu_components*2+1] = \
-                np.random.uniform(nsig_c200low,nsig_c200high,nwalkers)
-        pos[:,n_betpars+nu_components*2+2] = \
-                np.random.uniform(tSFlow,tSFhigh,nwalkers)
-        pos[:,n_betpars+nu_components*2+3] = \
-                np.random.uniform(logmWDMlow,logmWDMhigh,nwalkers)
-        pos[:,n_betpars+nu_components*2+4] = \
-                np.random.uniform(logsigmaSIlow,logsigmaSIhigh,nwalkers)
-        pos[:,n_betpars+nu_components*2+5] = \
-                np.random.uniform(logmleftlow,logmlefthigh,nwalkers)
-        pos[:,n_betpars+nu_components*2+6] = \
-                np.random.uniform(zinlow,zinhigh,nwalkers)
-        pos[:,n_betpars+nu_components*2+7] = \
-                np.random.uniform(logMcenlow,logMcenhigh,nwalkers)
-        pos[:,n_betpars+nu_components*2+8] = \
-                np.random.uniform(logacenlow,logacenhigh,nwalkers)
-        pos[:,n_betpars+nu_components*2+9] = \
-                np.random.uniform(Arotlow,Arothigh,nwalkers)
-        pos[:,n_betpars+nu_components*2+10] = \
-                np.random.uniform(drangelow,drangehigh,nwalkers)
-        pos[:,ndim-1] = \
-                np.random.uniform(Mstar_min,Mstar_max,nwalkers)
-    elif (walkermode == 'fast'):
-        pos = np.zeros((nwalkers, ndim), dtype='float')
-        poslow, poshigh = blobcalc(bet0min,bet0max)
-        pos[:,0] = np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(betinfmin,betinfmax)
-        pos[:,1] = np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(logbetr0min,logbetr0max)
-        pos[:,2] = np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(betnmin,betnmax)
-        pos[:,3] = np.random.uniform(poslow,poshigh,nwalkers)
-        for i in range(len(pfits)):
-            poslow, poshigh = blobcalc(nupars_minstart[i],nupars_maxstart[i])
-            pos[:,n_betpars+i] = \
-                    np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(logM200low,logM200high)
-        pos[:,n_betpars+nu_components*2] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(nsig_c200low,nsig_c200high)
-        pos[:,n_betpars+nu_components*2+1] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(tSFlow,tSFhigh)
-        pos[:,n_betpars+nu_components*2+2] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(logmWDMlow,logmWDMhigh)
-        pos[:,n_betpars+nu_components*2+3] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(logsigmaSIlow,logsigmaSIhigh)
-        pos[:,n_betpars+nu_components*2+4] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(logmleftlow,logmlefthigh)
-        pos[:,n_betpars+nu_components*2+5] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(zinlow,zinhigh)
-        pos[:,n_betpars+nu_components*2+6] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(logMcenlow,logMcenhigh)
-        pos[:,n_betpars+nu_components*2+7] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(logacenlow,logacenhigh)
-        pos[:,n_betpars+nu_components*2+8] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(Arotlow,Arothigh)
-        pos[:,n_betpars+nu_components*2+9] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(drangelow,drangehigh)
-        pos[:,n_betpars+nu_components*2+10] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
-        poslow, poshigh = blobcalc(Mstar_min,Mstar_max)
-        pos[:,ndim-1] = \
-                np.random.uniform(poslow,poshigh,nwalkers)
+    pos = np.zeros((nwalkers, ndim), dtype='float')
+    poslow, poshigh = blobcalc(bet0min,bet0max)
+    pos[:,0] = np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(betinfmin,betinfmax)
+    pos[:,1] = np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(logbetr0min,logbetr0max)
+    pos[:,2] = np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(betnmin,betnmax)
+    pos[:,3] = np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(logM200low,logM200high)
+    pos[:,n_betpars] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(nsig_c200low,nsig_c200high)
+    pos[:,n_betpars+1] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(mfaclow,mfachigh)
+    pos[:,n_betpars+2] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(logmWDMlow,logmWDMhigh)
+    pos[:,n_betpars+3] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(logsigmaSIlow,logsigmaSIhigh)
+    pos[:,n_betpars+4] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    logmlefthighuse = logmlefthigh
+    logmleftlowuse = np.log10(0.1*10.0**(logmlefthigh))
+    if (logmleftlowuse < logmleftlow):
+        logmleftlowuse = logmleftlow
+    print('Starting blob for mleft near the top:',\
+          logmleftlowuse,logmlefthighuse)
+    poslow, poshigh = blobcalc(logmleftlowuse,logmlefthighuse)
+    pos[:,n_betpars+5] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(zinlow,zinhigh)
+    pos[:,n_betpars+6] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(logMcenlow,logMcenhigh)
+    pos[:,n_betpars+7] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(logacenlow,logacenhigh)
+    pos[:,n_betpars+8] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(Arotlow,Arothigh)
+    pos[:,n_betpars+9] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(drangelow,drangehigh)
+    pos[:,n_betpars+10] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
+    poslow, poshigh = blobcalc(Mstar_min,Mstar_max)
+    pos[:,ndim-1] = \
+            np.random.uniform(poslow,poshigh,nwalkers)
 
     #Set up fitting function and priors: 
     if (propermotion == 'no'):
-        x1 = rbin_phot
         x2 = rbin_kin
-        y1 = surfden
-        y1err = surfdenerr
         y2 = sigpmean
         y2err = sigperr
     elif (propermotion == 'yes'):
-        x1 = rbin_phot
         x2 = rbin_kin
         x3 = rbin_kinp
-        y1 = surfden
-        y1err = surfdenerr
         y2 = sigpmean
         y2err = sigperr
         y3 = sigpmr
@@ -843,9 +721,8 @@ if (codemode == 'run'):
         lnprior_set(theta,n_betpars,bet0min,bet0max,\
                     betinfmin,betinfmax,\
                     logbetr0min,logbetr0max,betnmin,betnmax,\
-                    nu_components,nupars_min,nupars_max,\
                     n_mpars,logM200low,logM200high,\
-                    nsig_c200low,nsig_c200high,tSFlow,tSFhigh,\
+                    nsig_c200low,nsig_c200high,mfaclow,mfachigh,\
                     logmWDMlow,logmWDMhigh,logsigmaSIlow,logsigmaSIhigh,\
                     logmleftlow,logmlefthigh,zinlow,zinhigh,\
                     logMcenlow,logMcenhigh,\
@@ -860,23 +737,24 @@ if (codemode == 'run'):
             if (virialshape == 'no'):
                 sampler = \
                     emcee.EnsembleSampler(nwalkers,ndim,lnprob,\
-                        args=(x1,x2,y1,y1err,y2,y2err),pool=pool)
+                        args=(x2,y2,y2err),pool=pool)
             else:
                 sampler = \
                     emcee.EnsembleSampler(nwalkers,ndim,lnprob,\
-                        args=(x1,x2,y1,y1err,y2,y2err,\
+                        args=(x2,y2,y2err,\
                               vsp1val,vsp1pdf,vsp2val,vsp2pdf),pool=pool)
         elif (propermotion == 'yes'):
             if (virialshape == 'no'):
                 sampler = emcee.EnsembleSampler(nwalkers,ndim,lnprob,\
-                        args=(x1,x2,x3,y1,y1err,y2,y2err,\
+                        args=(x2,x3,y2,y2err,\
                               y3,y3err,y4,y4err),pool=pool)
             else:
                 sampler = emcee.EnsembleSampler(nwalkers,ndim,lnprob,\
-                        args=(x1,x2,x3,y1,y1err,y2,y2err,\
+                        args=(x2,x3,y2,y2err,\
                               y3,y3err,y4,y4err,\
                               vsp1val,vsp1pdf,vsp2val,vsp2pdf),pool=pool)
         sampler.run_mcmc(pos, nmodels, progress = True)
+    burn = np.int(0.75*nmodels)
 
     #Store the output (including the data):
     print('Writing data to file ... ')
@@ -899,7 +777,6 @@ if (codemode == 'run'):
                     sigpmterr[i]))
         f.close()
 
-    burn = np.int(0.75*nmodels)
     chisq = -2.0 * \
             sampler.get_log_prob(discard=burn, flat=True)
     par_test = sampler.get_chain(discard=burn, flat=True)
@@ -981,10 +858,10 @@ elif (codemode == 'plot'):
     #Set up arrays to store confidence intervals:
     M_int = np.zeros((7,len(rbin)))
     rho_int = np.zeros((7,len(rbin)))
+    rho_notides_int = np.zeros((7,len(rbin)))
     dlnrhodlnr_int = np.zeros((7,len(rbin)))
     Mstar_int = np.zeros((7,len(Mstar_rad)))
     Mdynrat_int = np.zeros((7,len(Mstar_rad)))
-    nu_int = np.zeros((7,len(Mstar_rad)))
     Mcen_int = np.zeros((7,len(rbin)))
     accelminmax_int = np.zeros((7,len(rbin)))
     if (calc_Jfac == 'yes'):
@@ -993,14 +870,14 @@ elif (codemode == 'plot'):
         D_int = np.zeros(7)                
     Mstore = np.zeros((len(rbin),nsamples))
     rhostore = np.zeros((len(rbin),nsamples))
+    rhonotidesstore = np.zeros((len(rbin),nsamples))
     dlnrhodlnrstore = np.zeros((len(rbin),nsamples))
     Mstarstore = np.zeros((len(Mstar_rad),nsamples))
     Mdynratstore = np.zeros((len(Mstar_rad),nsamples))
-    nustore = np.zeros((len(Mstar_rad),nsamples))
     M200store = np.zeros(nsamples)
     vmaxstore = np.zeros(nsamples)
     nsig_c200store = np.zeros(nsamples)
-    tSFstore = np.zeros(nsamples)
+    mfacstore = np.zeros(nsamples)
     mWDMstore = np.zeros(nsamples)
     sigmaSIstore = np.zeros(nsamples)
     mleftstore = np.zeros(nsamples)
@@ -1017,7 +894,6 @@ elif (codemode == 'plot'):
         Dstore = np.zeros(nsamples)
     bet_int = np.zeros((7,len(rbin)))
     betstar_int = np.zeros((7,len(rbin)))
-    Sig_int = np.zeros((7,len(rbin)))
     sigp_int = np.zeros((7,len(rbin)))
     vphirot_int = np.zeros((7,len(rbin)))
     if (virialshape == 'yes'):
@@ -1028,7 +904,6 @@ elif (codemode == 'plot'):
         sigpmt_int = np.zeros((7,len(rbin)))
     betstore = np.zeros((len(rbin),nsamples))
     betstarstore = np.zeros((len(rbin),nsamples))
-    Sigstore = np.zeros((len(rbin),nsamples))
     sigpstore = np.zeros((len(rbin),nsamples))
     vphirotstore = np.zeros((len(rbin),nsamples))
     if (virialshape == 'yes'):
@@ -1041,15 +916,14 @@ elif (codemode == 'plot'):
     for i in range(nsamples):
         theta = par_test[sample_choose[i],:]
         betpars = theta[0:n_betpars]
-        nupars = theta[n_betpars:n_betpars+nu_components*2]
-        Mpars = theta[n_betpars+nu_components*2:\
-                      n_betpars+nu_components*2+n_mpars]
-        Arot = theta[n_betpars+nu_components*2+n_mpars]
-        drange = theta[n_betpars+nu_components*2+n_mpars+1]
+        Mpars = theta[n_betpars:\
+                      n_betpars+n_mpars]
+        Arot = theta[n_betpars+n_mpars]
+        drange = theta[n_betpars+n_mpars+1]
         Mstar = theta[ndim-1]
-        nuparsu = np.array(nupars)
         Mparsu = np.array(Mpars)
         Mparsu[0] = 10.**Mpars[0]
+        Mparsu[2] = Mpars[2]*Mstar
         Mparsu[3] = 10.**Mpars[3]
         Mparsu[4] = 10.**Mpars[4]
         Mparsu[5] = 10.**Mpars[5]
@@ -1059,29 +933,31 @@ elif (codemode == 'plot'):
         #Calculate all profiles we want to plot:
         if (propermotion == 'no'):
             if (virialshape == 'no'):
-                sigr2,Sig,sigLOS2 = \
-                   sigp_fit(rbin,rbin,nuparsu,\
-                             Mparsu,betpars,Mstar,Arot)
+                sigr2,sigLOS2 = \
+                   sigp_fit(rbin,\
+                            Mparsu,betpars,Mstar,Arot)
             else:
-                sigr2,Sig,sigLOS2,vs1,vs2 = \
-                    sigp_fit_vs(rbin,rbin,nuparsu,\
+                sigr2,sigLOS2,vs1,vs2 = \
+                    sigp_fit_vs(rbin,\
                                 Mparsu,betpars,Mstar,Arot)
         elif (propermotion == 'yes'):
             if (virialshape == 'no'):
-                sigr2,Sig,sigLOS2,sigpmr2,sigpmt2 = \
-                    sigp_fit_prop(rbin,rbin,rbin,nuparsu,Mparsu,betpars,\
+                sigr2,sigLOS2,sigpmr2,sigpmt2 = \
+                    sigp_fit_prop(rbin,rbin,Mparsu,betpars,\
                                   Mstar,Arot)
             else:
-                sigr2,Sig,sigLOS2,sigpmr2,sigpmt2,vs1,vs2 = \
-                    sigp_fit_prop_vs(rbin,rbin,rbin,nuparsu,Mparsu,betpars,\
+                sigr2,sigLOS2,sigpmr2,sigpmt2,vs1,vs2 = \
+                    sigp_fit_prop_vs(rbin,rbin,Mparsu,betpars,\
                                      Mstar,Arot)
 
         Mr = M(rbin,Mparsu)
         betar = beta(rbin,betpars)
         rhor = rho(rbin,Mparsu)
+        Mparsu_notides = Mparsu
+        Mparsu_notides[5] = 1.0
+        rhonotidesr = rho(rbin,Mparsu_notides)
         dlnrhodlnrr = dlnrhodlnr(rbin,Mparsu)
         Mstarr = Mstar_prof*Mstar
-        nu_mass_r = multiplummass(Mstar_rad,nuparsu)
         Mcenr = Mcentral(rbin,Mparsu)
         accelminmaxr = accelminmax_calc(rbin,M,Mcentral,Mparsu,\
                                         Mstar_rad,Mstar_prof,Mstar,Guse,rmin,rmax,intpnts)
@@ -1089,13 +965,12 @@ elif (codemode == 'plot'):
         betstore[:,i] = betar
         betstarstore[:,i] = betar/(2.0-betar)
         sigpstore[:,i] = np.sqrt(sigLOS2)/1000. 
-        Sigstore[:,i] = Sig
         vphirotstore[:,i] = np.sqrt(2.0*sigLOS2*Arot*rbin/Rhalf)/1000.
         rhostore[:,i] = rhor
+        rhonotidesstore[:,i] = rhonotidesr
         dlnrhodlnrstore[:,i] = dlnrhodlnrr
         Mstarstore[:,i] = Mstarr
         Mdynratstore[:,i] = M(Mstar_rad,Mparsu)/Mstarr
-        nustore[:,i] = nu_mass_r
         Mcenstore[:,i] = Mcenr
         accelminmaxstore[:,i] = accelminmaxr
 
@@ -1105,7 +980,7 @@ elif (codemode == 'plot'):
         vmaxstore[i] = np.max(vcfind)/kms
         M200store[i] = Mparsu[0]
         nsig_c200store[i] = Mparsu[1]
-        tSFstore[i] = Mparsu[2]
+        mfacstore[i] = Mpars[2]
         mWDMstore[i] = Mparsu[3]
         sigmaSIstore[i] = Mparsu[4]
         mleftstore[i] = Mparsu[5]
@@ -1135,6 +1010,9 @@ elif (codemode == 'plot'):
             rho_int[0,j], rho_int[1,j], rho_int[2,j], rho_int[3,j], \
                 rho_int[4,j], rho_int[5,j], rho_int[6,j] = \
                 calcmedquartnine(rhostore[j,:])
+            rho_notides_int[0,j], rho_notides_int[1,j], rho_notides_int[2,j], rho_notides_int[3,j], \
+                rho_notides_int[4,j], rho_notides_int[5,j], rho_notides_int[6,j] = \
+                calcmedquartnine(rhonotidesstore[j,:])
             dlnrhodlnr_int[0,j], dlnrhodlnr_int[1,j],\
                 dlnrhodlnr_int[2,j], \
                 dlnrhodlnr_int[3,j], \
@@ -1157,13 +1035,6 @@ elif (codemode == 'plot'):
                 Mdynrat_int[5,j], \
                 Mdynrat_int[6,j] = \
                 calcmedquartnine(Mdynratstore[j,:])
-        for j in range(len(Mstar_rad)):
-            nu_int[0,j], nu_int[1,j], nu_int[2,j], \
-                nu_int[3,j], \
-                nu_int[4,j], \
-                nu_int[5,j], \
-                nu_int[6,j] = \
-                calcmedquartnine(nustore[j,:])
         for j in range(len(rbin)):
             Mcen_int[0,j], Mcen_int[1,j], Mcen_int[2,j], \
                 Mcen_int[3,j], \
@@ -1203,12 +1074,6 @@ elif (codemode == 'plot'):
                 sigp_int[5,j], \
                 sigp_int[6,j] = \
                 calcmedquartnine(sigpstore[j,:])
-            Sig_int[0,j], Sig_int[1,j], Sig_int[2,j], \
-                Sig_int[3,j], \
-                Sig_int[4,j], \
-                Sig_int[5,j], \
-                Sig_int[6,j] = \
-                calcmedquartnine(Sigstore[j,:])
             vphirot_int[0,j], vphirot_int[1,j], vphirot_int[2,j], \
                 vphirot_int[3,j], \
                 vphirot_int[4,j], \
@@ -1245,10 +1110,9 @@ elif (codemode == 'plot'):
     #######################################################
     #And now make the plots:
     
-    #First make a corner plot; don't include surface
-    #brightness parameters:
+    #First make a corner plot:
     index = np.concatenate((np.arange(0,n_betpars,1,dtype=int),\
-                            np.arange(n_betpars+nu_components*2,\
+                            np.arange(n_betpars,\
                                       ndim,1,dtype=int)),\
                            axis=0)
     thetause = par_test[sample_choose,:]
@@ -1258,17 +1122,17 @@ elif (codemode == 'plot'):
                             r"$\tilde{\beta_\infty}$",
                             r"${\rm Log}_{10}[r_\beta/{\rm kpc}]$",
                             r"$n_\beta$",
-                            r"$M_{200}/{\rm M}_\odot$",
+                            r"${\rm Log}_{10}[M_{200}/{\rm M}_\odot]$",
                             r"$\sigma_c$",
-                            r"$t_{\rm SF}/{\rm Gyr}$",
-                            r"$m_{\rm WDM}/{\rm keV}$",
-                            r"$\sigma_{\rm SI}/({\rm cm}^2\,{\rm g}^{-1})$",
-                            r'$m_{\rm left}/{\rm M}_odot$',
+                            r"$m_{\rm fac}$",
+                            r"${\rm Log}_{10}[m_{\rm WDM}/{\rm keV}]$",
+                            r"${\rm Log}_{10}[\sigma_{\rm SI}/({\rm cm}^2\,{\rm g}^{-1})]$",
+                            r'${\rm Log}_{10}[m_{\rm left}/{\rm M}_\odot]$',
                             r"$z_{\rm in}$",
-                            r"$M_{\rm cen}/{\rm M}_\odot$",
-                            r"$a_{\rm cen}/{\rm kpc}$",
+                            r"${\rm Log}_{10}[M_{\rm cen}/{\rm M}_\odot]$",
+                            r"${\rm Log}_{10}[a_{\rm cen}/{\rm kpc}]$",
                             r"$A_{\rm rot}$",
-                            r"$d/{\rm kpc}$",
+                            r"$\Delta_d/{\rm kpc}$",
                             r"$M_*/{\rm M}_\odot$",
                         ],
                         quantiles=[0.16, 0.5, 0.84],
@@ -1283,50 +1147,6 @@ elif (codemode == 'plot'):
         dnineninelow, dnineninehi = calcmedquartnine(dstore)
     dcorr = dmed/dgal_kpc
 
-    ##### Stellar surface density ##### 
-    fig = plt.figure(figsize=(figx,figy))
-    ax = fig.add_subplot(111)
-    for axis in ['top','bottom','left','right']:
-        ax.spines[axis].set_linewidth(mylinewidth)
-    plt.xticks(fontsize=myfontsize)
-    plt.yticks(fontsize=myfontsize)
-
-    plt.loglog()
-
-    plt.errorbar(rbin_phot*dcorr,surfden,surfdenerr,\
-                 color='b',ecolor='b',linewidth=2,alpha=0.75,\
-                 fmt='o')
-    plt.fill_between(rbin,Sig_int[5,:],Sig_int[6,:],\
-                     facecolor='black',alpha=alp3sig,\
-                     edgecolor='none')
-    plt.fill_between(rbin,Sig_int[3,:],Sig_int[4,:],\
-                     facecolor='black',alpha=0.33,\
-                     edgecolor='none')
-    plt.fill_between(rbin,Sig_int[1,:],Sig_int[2,:],\
-                     facecolor='black',alpha=0.66,\
-                     edgecolor='none')
-    plt.plot(rbin,Sig_int[0,:],'k',linewidth=mylinewidth,\
-             label=r'Fit')
-
-    plt.axvline(x=Rhalf,color='blue',alpha=0.5,\
-                linewidth=mylinewidth)
-
-    plt.xlabel(r'$R\,[{\rm kpc}]$',\
-                   fontsize=myfontsize)
-    plt.ylabel(r'$\Sigma_*\,[N\,{\rm kpc}^{-2}]$',\
-                   fontsize=myfontsize)
-    plt.xlim([np.min(rbin),np.max(rbin)])
-    plt.ylim([ymin_Sigstar,ymax_Sigstar])
-    plt.savefig(outdir+'output_Sigstar.pdf',bbox_inches='tight')
-
-    #Write the above data to files for comparitive plotting later:
-    f = open(outdir+'output_Sigstar.txt','w')
-    for i in range(len(rbin)):
-        f.write('%f %f %f %f %f %f %f %f\n' % \
-                (rbin[i],Sig_int[0,i],Sig_int[1,i],Sig_int[2,i],Sig_int[3,i],\
-                 Sig_int[4,i],Sig_int[5,i],Sig_int[6,i]))
-    f.close()
-    
     ##### Stellar projected velocity dispersion #####  
     fig = plt.figure(figsize=(figx,figy))
     ax = fig.add_subplot(111)
@@ -1651,15 +1471,6 @@ elif (codemode == 'plot'):
               Mdynrat_int[4,i], Mdynrat_int[5,i], Mdynrat_int[6,i]))
     f.close()
 
-    #And nu_mass_r:
-    f = open(outdir+'output_nu_mass_r.txt','w')
-    for i in range(len(Mstar_rad)):
-        f.write('%f %f %f %f %f %f %f %f\n' % \
-         (Mstar_rad[i],nu_int[0,i],nu_int[1,i],nu_int[2,i],\
-              nu_int[3,i],\
-              nu_int[4,i], nu_int[5,i], nu_int[6,i]))
-    f.close()
-
     #And Mstar:
     f = open(outdir+'output_Mass_Mstar.txt','w')
     for i in range(len(Mstar_rad)):
@@ -1698,6 +1509,8 @@ elif (codemode == 'plot'):
                      edgecolor='none')
     plt.plot(rbin,rho_int[0,:],'k',linewidth=mylinewidth,\
              label=r'Fit')
+    plt.plot(rbin,rho_notides_int[0,:],'r',linewidth=mylinewidth,\
+             label=r'No tides')
 
     #Overplot true solution (for mock data): 
     if (overtrue == 'yes'):
@@ -1725,12 +1538,18 @@ elif (codemode == 'plot'):
          (rbin[i],rho_int[0,i],rho_int[1,i],rho_int[2,i],rho_int[3,i],\
               rho_int[4,i],rho_int[5,i],rho_int[6,i]))
     f.close()
-
+    f = open(outdir+'output_rho_notides.txt','w')
+    for i in range(len(rbin)):
+        f.write('%f %f %f %f %f %f %f %f\n' % \
+                (rbin[i],rho_notides_int[0,i],rho_notides_int[1,i],rho_notides_int[2,i],rho_notides_int[3,i],\
+                 rho_notides_int[4,i],rho_notides_int[5,i],rho_notides_int[6,i]))
+    f.close()
+                        
     #And the model parameters:
     f = open(outdir+'output_Model_chain.txt','w')
     for i in range(len(M200store)):
         f.write('%f %f %f %f %f %f %f %f\n' % \
-                (M200store[i],nsig_c200store[i],tSFstore[i],mWDMstore[i],\
+                (M200store[i],nsig_c200store[i],mfacstore[i],mWDMstore[i],\
                  sigmaSIstore[i],mleftstore[i],zinstore[i],vmaxstore[i]))
     f.close()
 
@@ -2142,17 +1961,17 @@ elif (codemode == 'plot'):
     plt.xticks(fontsize=myfontsize)
     plt.yticks(fontsize=myfontsize)
     
-    n, bins, patches = plt.hist(tSFstore,bins=nbin,\
-                                range=(tSFlow,tSFhigh),\
+    n, bins, patches = plt.hist(mfacstore,bins=nbin,\
+                                range=(mfaclow,mfachigh),\
                                 facecolor='k', \
                                 histtype='bar',alpha=0.5)
         
-    plt.xlabel(r'$t_{\rm SF}\,[{\rm Gyrs}]$',fontsize=myfontsize)
-    plt.xlim([tSFlow,tSFhigh])
+    plt.xlabel(r'$m_{\rm fac}$',fontsize=myfontsize)
+    plt.xlim([mfaclow,mfachigh])
 
     plt.ylabel(r'$N$',fontsize=myfontsize) 
     plt.ylim([0,np.max(n)])
-    plt.savefig(outdir+'output_tSF.pdf',bbox_inches='tight')
+    plt.savefig(outdir+'output_mfac.pdf',bbox_inches='tight')
 
     fig = plt.figure(figsize=(figx,figy))
     ax = fig.add_subplot(111)
@@ -2291,6 +2110,24 @@ elif (codemode == 'plot'):
     print('*******************************')
     print('acen -/+ 68% :: ', acenmed, acensixlow, acensixhi)
 
+    #And the same for mWDM:
+    mWDMmed, mWDMsixlow, mWDMsixhi,\
+        mWDMninelow, mWDMninehi, \
+        mWDMnineninelow, mWDMnineninehi = calcmedquartnine(mWDMstore)
+    print('*******************************')
+    print('mWDM -/+ 68% +/- 95% +/- 99% :: ', \
+          mWDMmed, mWDMsixlow, mWDMsixhi, mWDMninelow, mWDMninehi,\
+          mWDMnineninelow, mWDMnineninehi)
+
+    #And the same for sigmaSI:
+    sigmaSImed, sigmaSIsixlow, sigmaSIsixhi,\
+        sigmaSIninelow, sigmaSIninehi, \
+        sigmaSInineninelow, sigmaSInineninehi = calcmedquartnine(sigmaSIstore)
+    print('*******************************')
+    print('sigmaSI -/+ 68% +/- 95% +/- 99% :: ', \
+          sigmaSImed, sigmaSIsixlow, sigmaSIsixhi, sigmaSIninelow, sigmaSIninehi,\
+          sigmaSInineninelow, sigmaSInineninehi)          
+    
     #And the same for J-factor:
     if (calc_Jfac == 'yes'):
         Jmed, Jsixlow, Jsixhi,\

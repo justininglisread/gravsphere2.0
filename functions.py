@@ -159,6 +159,26 @@ def estimate_M200abund(Mstarlo, Mstarhi, tSFlow, tSFhigh):
 
     return M200_SFRlo, M200_SFRhi
 
+def estimate_Mstarabund(M200):
+    #Load in the abundance matching
+    #relation (non-paramteric) from
+    #Read & Erkal 2019:
+    f = open('./Data/mSFR-mhalo-field.txt','r')
+    data = np.genfromtxt(f)
+    f.close()
+    M200lowarr = data[:,0][np.where(data[:,1])][::-1]
+    SFRlow = data[:,1][np.where(data[:,1])][::-1]
+    M200higharr = data[:,0][np.where(data[:,2])][::-1]
+    SFRhigh = data[:,2][np.where(data[:,2])][::-1]
+    
+    #Calculate the max abundance matching stellar mass:
+    tSF = 13.8*1.0e9
+    mSFRhigh = np.interp(M200,M200higharr,SFRhigh)
+    mSFRlow = np.interp(M200,M200lowarr,SFRlow)
+    Mstar = (mSFRhigh+mSFRlow)/2.0 * tSF
+    
+    return Mstar
+
 def findJsq(apo,peri,host,hostpars):
     '''Finds the SPECIFIC angular momentum squared (Jsq) for
        an orbit with apo and peri in a spherical potential with
@@ -384,7 +404,7 @@ def get_D(rho, Mpars, distance, r_max):
 
 ###########################################################
 #For DM mass profile:
-def cosmo_profile_mass(r,M200,nsig_c200,tSF,mWDM,sigmaSI,\
+def cosmo_profile_mass(r,M200,nsig_c200,mstar,Rhalf,mWDM,sigmaSI,\
                        mleft,zin):
     #Assume M200 here defined at zin which is the redshift
     #of subhalo infall. This can be fit as a free parameter
@@ -393,7 +413,8 @@ def cosmo_profile_mass(r,M200,nsig_c200,tSF,mWDM,sigmaSI,\
     #**TO DO**
     #1. improve dark matter heating model, fit
     #on latest data using DarkLight!
-    #2. allow dark matter heating and sigmaSI to work
+    #2. pass half light radius!!
+    #3. allow dark matter heating and sigmaSI to work
     #together
     
     #Hard code choice of mass-concentration relation for
@@ -413,28 +434,35 @@ def cosmo_profile_mass(r,M200,nsig_c200,tSF,mWDM,sigmaSI,\
     #In this case, no dark matter heating will occur. This
     #needs to be fixed/tested/implemented. Otherwise if
     #sigmaSI < 1.0e-4 then assume no SIDM and dark matter
-    #heating will be set by the tSF parameter (that is
+    #heating will be set by the mstar+Rhalf parameters (that are
     #ignored if fitting SIDM):
     if (sigmaSI < 1.0e-4):
         menc = dis.vutils.menc(r, M200, 'coreNFW', c200=c200,\
-                        cNFW_method='d15',zin=zin,tSF=tSF,\
+                        cNFW_method='d15',zin=zin,mstar=mstar,\
                         wdm=True,mWDM=mWDM,sigmaSI=None,\
-                        mleft=mleft)
+                               mleft=mleft,Re0=Rhalf)
     else:
         menc = dis.vutils.menc(r, M200, 'sidm', c200=c200,\
-                        cNFW_method='d15',zin=zin,tSF=None,\
+                        cNFW_method='d15',zin=zin,mstar=0.0,\
                         wdm=True,mWDM=mWDM,sigmaSI=sigmaSI,\
-                        mleft=mleft)
+                        mleft=mleft,Re0=Rhalf)
 
     return menc
 
-def cosmo_profile_den(r, M200,nsig_c200,tSF,mWDM,sigmaSI,\
+def cosmo_profile_den(r,M200,nsig_c200,mstar,Rhalf,mWDM,sigmaSI,\
                       mleft,zin):
-    return np.zeros(len(r))
+    dmass = derivative(lambda x: cosmo_profile_mass(x,M200,nsig_c200,mstar,Rhalf,mWDM,sigmaSI,\
+                                                    mleft,zin),r,dx=1e-6)
+    den = 1.0/(4.0*np.pi*r**2.0)*dmass
+    return den
 
-def cosmo_profile_dlnrhodlnr(r, M200,nsig_c200,tSF,mWDM,sigmaSI,\
+def cosmo_profile_dlnrhodlnr(r, M200,nsig_c200,mstar,Rhalf,mWDM,sigmaSI,\
                              mleft,zin):
-    return np.zeros(len(r))
+    dden = derivative(lambda x: cosmo_profile_den(x,M200,nsig_c200,mstar,Rhalf,mWDM,sigmaSI,\
+                                                  mleft,zin),r,dx=1e-6)
+    dlnrhodlnr = dden / cosmo_profile_den(r,M200,nsig_c200,\
+                                          mstar,Rhalf,mWDM,sigmaSI,mleft,zin) * r
+    return dlnrhodlnr
 
 def corenfw_tides_den(r,M200,c,rc,n,rt,delta):
     gcon=1./(np.log(1.+c)-c/(1.+c))
@@ -496,7 +524,7 @@ def corenfw_tides_dlnrhodlnr(r,M200,c,rc,n,rt,delta):
 
 ###########################################################
 #For DM mass profile and VSPs of GC mocks (for overlaying 
-#true solution):
+#true solution).
 def alpbetgamden(r,rho0,r0,alp,bet,gam):
     return rho0*(r/r0)**(-gam)*(1.0+(r/r0)**alp)**((gam-bet)/alp)
 
@@ -509,7 +537,7 @@ def alpbetgammass(r,rho0,r0,alp,bet,gam):
     for i in range(3,len(r)):
         mass[i] = integrator(4.0*np.pi*r[:i]**2.*den[:i],r[:i])
     return mass
-    
+
 def alpbetgamsigr(r,rho0s,r0s,alps,bets,gams,rho0,r0,alp,bet,gam,ra):
     nu = alpbetgamden(r,rho0s,r0s,alps,bets,gams)
     mass = alpbetgammass(r,rho0,r0,alp,bet,gam)
@@ -517,10 +545,65 @@ def alpbetgamsigr(r,rho0s,r0s,alps,bets,gams,rho0,r0,alp,bet,gam,ra):
     sigr = np.zeros(len(r))
     for i in range(len(r)-3):
         sigr[i] = 1.0/nu[i]/gf[i] * \
-            integrator(Guse*mass[i:]*nu[i:]/r[i:]**2.0*\
-                       gf[i:],r[i:])
+                  integrator(Guse*mass[i:]*nu[i:]/r[i:]**2.0*\
+                             gf[i:],r[i:])
     return sigr
 
+#For improved surface brightness model:
+def doublealpbetgamden(r,rho01,rho02,r01,r02,alp1,alp2,\
+                       bet1,bet2,gam1,gam2):
+    return rho01*(r/r01)**(-gam1)*(1.0+(r/r01)**alp1)**((gam1-bet1)/alp1)+\
+        rho02*(r/r02)**(-gam2)*(1.0+(r/r02)**alp2)**((gam2-bet2)/alp2)
+
+def doublealpbetgammass(r,rho01,rho02,r01,r02,alp1,alp2,\
+                        bet1,bet2,gam1,gam2):
+    return alpbetgammass(r,rho01,r01,alp1,bet1,gam1)+\
+        alpbetgammass(r,rho02,r02,alp2,bet2,gam2)
+
+def doublealpbetgamsurf(r,rho01,rho02,r01,r02,alp1,alp2,\
+                        bet1,bet2,gam1,gam2,intpnts):
+    theta = np.linspace(0,np.pi/2.0-1.0e-30,num=intpnts)
+    cth = np.cos(theta)
+    cth2 = cth**2
+    surf = np.zeros(len(r), 'double')
+    for i in range(len(r)):
+        q = r[i]/cth
+        y = doublealpbetgamden(q,rho01,rho02,r01,r02,alp1,alp2,\
+                               bet1,bet2,gam1,gam2)
+        surf[i] = 2.0*r[i]*integrator(y/cth2,theta)
+    return surf
+
+def doublealpbetgamsurf_fit(r,rho01,rho02,r01,r02,alp1,alp2,\
+                            bet1,bet2,gam1,gam2):
+    intpnts = np.int(1e2)
+    return doublealpbetgamsurf(r,rho01,rho02,r01,r02,alp1,alp2,\
+                               bet1,bet2,gam1,gam2,intpnts)
+
+def doublealpbetgamsurf_acc(r,rho01,rho02,r01,r02,alp1,alp2,\
+                            bet1,bet2,gam1,gam2):
+    intpnts = np.int(1e4)
+    return doublealpbetgamsurf(r,rho01,rho02,r01,r02,alp1,alp2,\
+                               bet1,bet2,gam1,gam2,intpnts)
+
+def Rhalf_func_doublealpbetgam(rho01,rho02,r01,r02,alp1,alp2,\
+                               bet1,bet2,gam1,gam2):
+    #Calculate projected half light radius for
+    #the fourplum model:
+    ranal = np.logspace(-4,1,np.int(1e2))
+    Mstar_mass = doublealpbetgammass(ranal,rho01,rho02,r01,r02,alp1,alp2,\
+                                     bet1,bet2,gam1,gam2)
+    Mstar_surf = doublealpbetgamsurf_fit(ranal,rho01,rho02,r01,r02,alp1,alp2,\
+                                         bet1,bet2,gam1,gam2)
+    Menc_half = 0.0
+    i = 3
+    while (Menc_half < np.max(Mstar_mass)/2.0):
+        Menc_half = 2.0*np.pi*\
+                    integrator(Mstar_surf[:i]*ranal[:i],ranal[:i])
+        i = i + 1
+        Rhalf = ranal[i-1]
+    return Rhalf
+
+#Velocity anisotropy profiles:
 def osipkov(r,r0):
     return r**2.0/(r**2.0+r0**2.0)
     
@@ -593,8 +676,8 @@ def plummass(r,pars):
 
 ###########################################################
 #For Jeans modelling:
-def sigp(r1,r2,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
-         betpars,\
+def sigp(r2,M,Mcentral,beta,betaf,Mpars,\
+         betpars,nu_rad,nu_den,nu_surf,\
          Mstar_rad,Mstar_prof,Mstar,Arot,Rhalf,G,rmin,rmax,intpnts):
     #Calculate projected velocity dispersion profiles
     #given input *functions* nu(r); M(r); beta(r); betaf(r).
@@ -616,24 +699,24 @@ def sigp(r1,r2,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
 
     #First calc sigr2(rint):
     sigr2 = np.zeros(len(rint))
-    nur = nu(rint,nupars)
+    nur = np.interp(rint,nu_rad,nu_den,right=1.0e-30)
     betafunc = betaf(rint,betpars,Rhalf,Arot)
     for i in range(len(rint)):
         rq = rint[i]/cth
         Mq = M(rq,Mpars)+Mcentral(rq,Mpars)
         if (Mstar > 0):
             Mq = Mq+Mstar*np.interp(rq,Mstar_rad,Mstar_prof)
-        nuq = nu(rq,nupars)
+        nuq = np.interp(rq,nu_rad,nu_den,right=1.0e-30)
         betafuncq = betaf(rq,betpars,Rhalf,Arot)
         sigr2[i] = 1./nur[i]/rint[i]/betafunc[i] * \
             integrator(G*Mq*nuq*betafuncq*sth,th)
     
     #And now the sigLOS projection: 
-    Sig = Sigfunc(rint,nupars)
+    Sig = np.interp(rint,nu_rad,nu_surf,right=1.0e-30)
     sigLOS2 = np.zeros(len(rint))
     for i in range(len(rint)):
         rq = rint[i]/cth
-        nuq = nu(rq,nupars)
+        nuq = np.interp(rq,nu_rad,nu_den,right=1.0e-30)
         sigr2q = np.interp(rq,rint,sigr2,left=0,right=0)
         betaq = beta(rq,betpars)
         sigLOS2[i] = 2.0*rint[i]/Sig[i]*\
@@ -641,12 +724,11 @@ def sigp(r1,r2,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
 
     sigr2out = np.interp(r2,rint,sigr2,left=0,right=0)
     sigLOS2out = np.interp(r2,rint,sigLOS2,left=0,right=0)
-    Sigout = np.interp(r1,rint,Sig,left=0,right=0)
 
-    return sigr2out,Sigout,sigLOS2out
+    return sigr2out,sigLOS2out
 
-def sigp_vs(r1,r2,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
-            betpars,\
+def sigp_vs(r2,M,Mcentral,beta,betaf,Mpars,\
+            betpars,nu_rad,nu_den,nu_surf,\
             Mstar_rad,Mstar_prof,Mstar,Arot,Rhalf,G,rmin,rmax,intpnts):
     #Calculate projected velocity dispersion profiles
     #given input *functions* nu(r); M(r); beta(r); betaf(r).
@@ -671,24 +753,24 @@ def sigp_vs(r1,r2,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
 
     #First calc sigr2(rint):
     sigr2 = np.zeros(len(rint))
-    nur = nu(rint,nupars)
+    nur = np.interp(rint,nu_rad,nu_den,right=1.0e-30)
     betafunc = betaf(rint,betpars,Rhalf,Arot)
     for i in range(len(rint)):
         rq = rint[i]/cth
         Mq = M(rq,Mpars)+Mcentral(rq,Mpars)
         if (Mstar > 0):
             Mq = Mq+Mstar*np.interp(rq,Mstar_rad,Mstar_prof)
-        nuq = nu(rq,nupars)
+        nuq = np.interp(rq,nu_rad,nu_den,right=1.0e-30)
         betafuncq = betaf(rq,betpars,Rhalf,Arot)
         sigr2[i] = 1./nur[i]/rint[i]/betafunc[i] * \
             integrator(G*Mq*nuq*betafuncq*sth,th)
 
     #And now the sigLOS projection:
-    Sig = Sigfunc(rint,nupars)
+    Sig = np.interp(rint,nu_rad,nu_surf,right=1.0e-30)
     sigLOS2 = np.zeros(len(rint))
     for i in range(len(rint)):
         rq = rint[i]/cth
-        nuq = nu(rq,nupars)
+        nuq = np.interp(rq,nu_rad,nu_den,right=1.0e-30)
         sigr2q = np.interp(rq,rint,sigr2,left=0,right=0)
         betaq = beta(rq,betpars)
         sigLOS2[i] = 2.0*rint[i]/Sig[i]*\
@@ -705,12 +787,11 @@ def sigp_vs(r1,r2,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
 
     sigr2out = np.interp(r2,rint,sigr2,left=0,right=0)
     sigLOS2out = np.interp(r2,rint,sigLOS2,left=0,right=0)
-    Sigout = np.interp(r1,rint,Sig,left=0,right=0)
 
-    return sigr2out,Sigout,sigLOS2out,vs1,vs2
+    return sigr2out,sigLOS2out,vs1,vs2
 
-def sigp_prop(r1,r2,r3,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
-              betpars,\
+def sigp_prop(r2,r3,M,Mcentral,beta,betaf,Mpars,\
+              betpars,nu_rad,nu_den,nu_surf,\
               Mstar_rad,Mstar_prof,Mstar,Arot,Rhalf,G,rmin,rmax,intpnts):
     #Calculate projected velocity dispersion profiles
     #given input *functions* nu(r); M(r); beta(r); betaf(r).
@@ -732,26 +813,26 @@ def sigp_prop(r1,r2,r3,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
 
     #First calc sigr2(rint):
     sigr2 = np.zeros(len(rint))
-    nur = nu(rint,nupars)
+    nur = np.interp(rint,nu_rad,nu_den,right=1.0e-30)
     betafunc = betaf(rint,betpars,Rhalf,Arot)
     for i in range(len(rint)):
         rq = rint[i]/cth
         Mq = M(rq,Mpars)+Mcentral(rq,Mpars)
         if (Mstar > 0):
             Mq = Mq+Mstar*np.interp(rq,Mstar_rad,Mstar_prof)
-        nuq = nu(rq,nupars)
+        nuq = np.interp(rq,nu_rad,nu_den,right=1.0e-30)
         betafuncq = betaf(rq,betpars,Rhalf,Arot)
         sigr2[i] = 1./nur[i]/rint[i]/betafunc[i] * \
             integrator(G*Mq*nuq*betafuncq*sth,th)
  
     #And now the sigLOS, sigpmr and sigpmt projections:
-    Sig = Sigfunc(rint,nupars)
+    Sig = np.interp(rint,nu_rad,nu_surf,right=1.0e-30)
     sigLOS2 = np.zeros(len(rint))
     sigpmr2 = np.zeros(len(rint))
     sigpmt2 = np.zeros(len(rint))
     for i in range(len(rint)):
         rq = rint[i]/cth
-        nuq = nu(rq,nupars)
+        nuq = np.interp(rq,nu_rad,nu_den,right=1.0e-30)
         sigr2q = np.interp(rq,rint,sigr2,left=0,right=0)
         betaq = beta(rq,betpars)
         sigLOS2[i] = 2.0*rint[i]/Sig[i]*\
@@ -765,12 +846,12 @@ def sigp_prop(r1,r2,r3,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
     sigLOS2out = np.interp(r2,rint,sigLOS2,left=0,right=0)
     sigpmr2out = np.interp(r3,rint,sigpmr2,left=0,right=0)
     sigpmt2out = np.interp(r3,rint,sigpmt2,left=0,right=0)
-    Sigout = np.interp(r1,rint,Sig,left=0,right=0)
+    Sigout = np.interp(r1,nu_rad,nu_surf,right=0)
     
-    return sigr2out,Sigout,sigLOS2out,sigpmr2out,sigpmt2out
+    return sigr2out,sigLOS2out,sigpmr2out,sigpmt2out
 
-def sigp_prop_vs(r1,r2,r3,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
-                 betpars,\
+def sigp_prop_vs(r2,r3,M,Mcentral,beta,betaf,Mpars,\
+                 betpars,nu_rad,nu_den,nu_surf,\
                  Mstar_rad,Mstar_prof,Mstar,Arot,Rhalf,G,rmin,rmax,intpnts):
     #Calculate projected velocity dispersion profiles
     #given input *functions* nu(r); M(r); beta(r); betaf(r).
@@ -792,26 +873,26 @@ def sigp_prop_vs(r1,r2,r3,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
     
     #First calc sigr2(rint):
     sigr2 = np.zeros(len(rint))
-    nur = nu(rint,nupars)
+    nur = np.interp(rint,nu_rad,nu_den,right=1.0e-30)
     betafunc = betaf(rint,betpars,Rhalf,Arot)
     for i in range(len(rint)):
         rq = rint[i]/cth
         Mq = M(rq,Mpars)+Mcentral(rq,Mpars)
         if (Mstar > 0):
             Mq = Mq+Mstar*np.interp(rq,Mstar_rad,Mstar_prof)
-        nuq = nu(rq,nupars)
+        nuq = np.interp(rq,nu_rad,nu_den,right=1.0e-30)
         betafuncq = betaf(rq,betpars,Rhalf,Arot)
         sigr2[i] = 1./nur[i]/rint[i]/betafunc[i] * \
             integrator(G*Mq*nuq*betafuncq*sth,th)
 
     #And now the sigLOS, sigpmr and sigpmt projections:
-    Sig = Sigfunc(rint,nupars)
+    Sig = np.interp(rint,nu_rad,nu_surf,right=1.0e-30)
     sigLOS2 = np.zeros(len(rint))
     sigpmr2 = np.zeros(len(rint))
     sigpmt2 = np.zeros(len(rint))
     for i in range(len(rint)):
         rq = rint[i]/cth
-        nuq = nu(rq,nupars)
+        nuq = np.interp(rq,nu_rad,nu_den,right=1.0e-30)
         sigr2q = np.interp(rq,rint,sigr2,left=0,right=0)
         betaq = beta(rq,betpars)
         sigLOS2[i] = 2.0*rint[i]/Sig[i]*\
@@ -825,7 +906,6 @@ def sigp_prop_vs(r1,r2,r3,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
     sigLOS2out = np.interp(r2,rint,sigLOS2,left=0,right=0)
     sigpmr2out = np.interp(r3,rint,sigpmr2,left=0,right=0)
     sigpmt2out = np.interp(r3,rint,sigpmt2,left=0,right=0)
-    Sigout = np.interp(r1,rint,Sig,left=0,right=0)
 
     #And now the dimensional fourth order "virial shape"
     #parameters:
@@ -836,7 +916,7 @@ def sigp_prop_vs(r1,r2,r3,nu,Sigfunc,M,Mcentral,beta,betaf,nupars,Mpars,\
     vs2 = 4.0/35.0*integrator(nur*(7.0-6.0*betar)*sigr2*\
                               G*Mr*rint**3.0,rint)
     
-    return sigr2out,Sigout,sigLOS2out,sigpmr2out,sigpmt2out,\
+    return sigr2out,sigLOS2out,sigpmr2out,sigpmt2out,\
         vs1,vs2
 
 def beta(r,betpars):
@@ -917,6 +997,7 @@ def accelminmax_calc(r,M,Mcentral,Mpars,\
         aminmax[i] = np.max(alos)
     return aminmax
 
+
 ###########################################################
 #For data binning:
 def binthedata(R,ms,Nbin):
@@ -968,7 +1049,7 @@ def surf_renorm(rbin,surfden):
     #so that it can then be renormalised.
     #Calcualte also Rhalf.
     ranal = np.linspace(0,10,np.int(5000))
-    surfden_ranal = np.interp(ranal,rbin,surfden,left=0,right=0)
+    surfden_ranal = np.interp(ranal,rbin,surfden,right=1.0e-30)
     Menc_tot = 2.0*np.pi*integrator(surfden_ranal*ranal,ranal)
     Menc_half = 0.0
     i = 3
@@ -1118,21 +1199,30 @@ def threeplummass(r,M1,M2,M3,a1,a2,a3):
     return multiplummass(r,[M1,M2,M3,\
                             a1,a2,a3])
 
-def Rhalf_func(M1,M2,M3,a1,a2,a3):
+def fourplumsurf(r,M1,M2,M3,M4,a1,a2,a3,a4):
+    return multiplumsurf(r,[M1,M2,M3,M4,\
+                            a1,a2,a3,a4])
+def fourplumden(r,M1,M2,M3,M4,a1,a2,a3,a4):
+    return multiplumden(r,[M1,M2,M3,M4,\
+                           a1,a2,a3,a4])
+def fourplummass(r,M1,M2,M3,M4,a1,a2,a3,a4):
+    return multiplummass(r,[M1,M2,M3,M4,\
+                            a1,a2,a3,a4])
+
+def Rhalf_func_fourplum(M1,M2,M3,M4,a1,a2,a3,a4):
     #Calculate projected half light radius for
-    #the threeplum model:
+    #the fourplum model:
     ranal = np.logspace(-3,1,np.int(500))
-    Mstar_surf = threeplumsurf(ranal,M1,M2,M3,a1,a2,a3)
+    Mstar_surf = fourplumsurf(ranal,M1,M2,M3,M4,a1,a2,a3,a4)
 
     Menc_half = 0.0
     i = 3
-    while (Menc_half < (M1+M2+M3)/2.0):
+    while (Menc_half < (M1+M2+M3+M4)/2.0):
         Menc_half = 2.0*np.pi*\
             integrator(Mstar_surf[:i]*ranal[:i],ranal[:i])
         i = i + 1
     Rhalf = ranal[i-1]
     return Rhalf
-
 
 ###########################################################
 #For setting up walkers for fitting:
@@ -1339,3 +1429,78 @@ def vsppdf_calc(vsp):
 def vsp_pdf(vsp,bins,vsp_pdf):
     return np.interp(vsp,bins,vsp_pdf,left=0,right=0)
 
+
+###########################################################
+#For manipulating N-body data (for mocks and similar):
+def find_centre(pos,vel,mass):
+    #Store initial pos/vel:
+    pos_stars = pos
+    vel_stars = vel
+    
+    #Implementation of "shrinking sphere" centre:
+    comx = np.sum(pos_stars[:,0]*mass)/np.sum(mass)
+    comy = np.sum(pos_stars[:,1]*mass)/np.sum(mass)
+    comz = np.sum(pos_stars[:,2]*mass)/np.sum(mass)
+    comvx = np.sum(vel_stars[:,0]*mass)/np.sum(mass)
+    comvy = np.sum(vel_stars[:,1]*mass)/np.sum(mass)
+    comvz = np.sum(vel_stars[:,2]*mass)/np.sum(mass)
+    print('Initial com:', comx,comy,comz)
+    print('Initial comv:', comvx,comvy,comvz)
+    pos_stars[:,0] = pos_stars[:,0] - comx
+    pos_stars[:,1] = pos_stars[:,1] - comy
+    pos_stars[:,2] = pos_stars[:,2] - comz
+    vel_stars[:,0] = vel_stars[:,0] - comvx
+    vel_stars[:,1] = vel_stars[:,1] - comvy
+    vel_stars[:,2] = vel_stars[:,2] - comvz
+    tol = 1.0e12
+    spherer = 1.0
+
+    #Store total centre:
+    comxtot = comx
+    comytot = comy
+    comztot = comz
+    comvxtot = comvx
+    comvytot = comvy
+    comvztot = comvz
+    
+    spherer_in = spherer
+    while (tol > 1.0e-4):
+        sel = np.sqrt(pos_stars[:,0]**2.0+pos_stars[:,1]**2.0+pos_stars[:,2]**2.0) < spherer
+        print('Refining on inner particles:', spherer)
+        xuse = pos_stars[sel,0]
+        yuse = pos_stars[sel,1]
+        zuse = pos_stars[sel,2]
+        vxuse = vel_stars[sel,0]
+        vyuse = vel_stars[sel,1]
+        vzuse = vel_stars[sel,2]
+        massuse = mass[sel]
+        print('Max refine radius:', np.max(np.sqrt(xuse**2.0+yuse**2.0+zuse**2.0)))
+        comxold = comx
+        comyold = comy
+        comzold = comz
+        comx = np.sum(xuse*massuse)/np.sum(massuse)
+        comy = np.sum(yuse*massuse)/np.sum(massuse)
+        comz = np.sum(zuse*massuse)/np.sum(massuse)
+        comvx = np.sum(vxuse*massuse)/np.sum(massuse)
+        comvy = np.sum(vyuse*massuse)/np.sum(massuse)
+        comvz = np.sum(vzuse*massuse)/np.sum(massuse)
+        tol = np.sqrt((comx-comxold)**2.0+(comy-comyold)**2.0+(comz-comzold)**2.0)/\
+              spherer_in
+        comxtot = comxtot + comx
+        comytot = comytot + comy
+        comztot = comztot + comz
+        comvxtot = comvxtot + comvx
+        comvytot = comvytot + comvy
+        comvztot = comvztot + comvz
+        print('Refined com:', comxtot,comytot,comztot)
+        print('Refined comv:', comvxtot,comvytot,comvztot)
+        print('Tol:',tol)
+        pos_stars[:,0] = pos_stars[:,0] - comx
+        pos_stars[:,1] = pos_stars[:,1] - comy
+        pos_stars[:,2] = pos_stars[:,2] - comz
+        vel_stars[:,0] = vel_stars[:,0] - comvx
+        vel_stars[:,1] = vel_stars[:,1] - comvy
+        vel_stars[:,2] = vel_stars[:,2] - comvz    
+        spherer = spherer * 0.9
+    return comxtot,comytot,comztot,\
+        comvxtot,comvytot,comvztot

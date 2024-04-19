@@ -28,10 +28,17 @@ Nbin = 30
 Nbinkin = 25
 
 #Priors for surface density fit. Array values are:
-#[M1,M2,M3,a1,a2,a3] where M,a are the Plummer mass
-#and scale length. [-1 means use full radial range].
-p0in_min = np.array([1e-4,1e-4,1e-4,0.01,0.01,0.01])
-p0in_max = np.array([1e2,1e2,1e2,1.0,1.0,1.0])
+#Double alp-bet-gam SB model:
+p0in_min = np.array([np.log10(1.0e-4),np.log10(1.0e-15),\
+                                          np.log10(1.0e-3),np.log10(1.0e-5),\
+                                          0.25,0.25,\
+                                          3.1,3.1,\
+                                          0.0,0.0])
+p0in_max = np.array([np.log10(1.0e4),np.log10(1.0e-14),\
+                                          np.log10(1.0),np.log10(1.0e-4),\
+                                          10,10,\
+                                          9,9,\
+                                          0.25,0.25])
 Rfitmin = -1
 Rfitmax = -1
 
@@ -42,14 +49,14 @@ Rfitmax = -1
 #amplitude "backamp", describing some background. The first
 #Gaussian is assumed to have mean >0; the second mean <0, hence
 #the prior range on the mean is +ve definite for both.
-p0vin_min = np.array([-5.0,5.0,1.0,\
+p0vin_min = np.array([-1.0e-3,5.0,1.0,\
                       1e-5,20.0,30.0,\
                       1e-5,20.0,30.0])
-p0vin_max = np.array([5.0,25.0,5.0,\
+p0vin_max = np.array([1.0e-3,25.0,5.0,\
                       1e-4,95.0,125.0,\
                       1e-4,95.0,125.0])
-vfitmin = -75.0
-vfitmax = 75.0
+vfitmin = 0
+vfitmax = 0
 Rfitvmin = -1
 Rfitvmax = -1
 

@@ -61,11 +61,10 @@ Nbinkinarr_prop = Nbinkinarr
 #from binulator_initialise_LeoII import *
 #from binulator_initialise_Sculptor import *
 #from binulator_initialise_Sextans import *
-from binulator_initialise_Fornax import *
+#from binulator_initialise_Fornax import *
 #from binulator_initialise_SegI import *
 #from binulator_initialise_SMC import *
 #from binulator_initialise_Ocen import *
-#from binulator_initialise_OcenPB import *
 
 #Mocks:
 #from binulator_initialise_SMCmock import *
@@ -74,6 +73,7 @@ from binulator_initialise_Fornax import *
 #from binulator_initialise_Ocenmock import *
 #from binulator_initialise_FIRE import *
 #from binulator_initialise_EDGE import *
+from binulator_initialise_retmock import *
 
 #M31 satellites:
 #from binulator_initialise_And21 import *
@@ -349,8 +349,8 @@ plt.loglog()
 
 plt.errorbar(R,surfden,surfdenerr,color='black',ecolor='black',\
              fmt='o',\
-             linewidth=mylinewidth,marker='o',markersize=5,\
-             alpha=0.5,label='Data')
+             linewidth=1,marker='o',markersize=1,\
+             alpha=0.25,label='Data')
 plt.fill_between(Rplot,surf_int[3,:],surf_int[4,:],\
                  facecolor='blue',alpha=0.33,\
                  edgecolor='none',label='Fit (95\%)')
@@ -359,8 +359,9 @@ plt.fill_between(Rplot,surf_int[1,:],surf_int[2,:],\
                  edgecolor='none',label='Fit (68\%)')
             
 #Best fit model:
-surfbest = threeplumsurf(Rplot,p0best[0],p0best[1],p0best[2],\
-                         p0best[3],p0best[4],p0best[5])
+surfbest = doublealpbetgamsurf_acc(Rplot,p0best[0],p0best[1],p0best[2],p0best[3],\
+                                   p0best[4],p0best[5],p0best[6],p0best[7],\
+                                   p0best[8],p0best[9])
 plt.plot(Rplot,surfbest,color='red',linewidth=2,label='Best fit')
 
 #Check for negative density:
@@ -370,15 +371,16 @@ if (surfbest[index[0]] < 0):
           Rplot[index[0]],surfbest[index[0]])
 
 #Numerical projection (test):
-intpnts = 250
-theta = np.linspace(0,np.pi/2.0-1e-6,num=intpnts)
+intpnts = np.int(5e3)
+theta = np.linspace(0,np.pi/2.0-1e-30,num=intpnts)
 cth = np.cos(theta)
 cth2 = cth**2.0
 surf = np.zeros(len(Rplot))
 for i in range(len(Rplot)):
     q = Rplot[i]/cth
-    y = threeplumden(q,p0best[0],p0best[1],p0best[2],\
-                     p0best[3],p0best[4],p0best[5])
+    y = doublealpbetgamden(q,p0best[0],p0best[1],p0best[2],p0best[3],\
+                           p0best[4],p0best[5],p0best[6],p0best[7],\
+                           p0best[8],p0best[9])
     surf[i] = 2.0*Rplot[i]*integrator(y/cth2,theta)
 plt.plot(Rplot,surf,color='orange',linewidth=2,linestyle='dashed',\
          label='Best fit (numerical)')
@@ -389,7 +391,7 @@ plt.axvline(x=Rhalf_int[0],color='blue',alpha=0.5,\
 plt.xlim([xpltmin,xpltmax])
 plt.ylim([surfpltmin,surfpltmax])
 
-plt.legend(loc='upper right',fontsize=mylegendfontsize)
+plt.legend(loc='lower left',fontsize=mylegendfontsize)
 plt.savefig(outfile+'_surfden.pdf',bbox_inches='tight')
 
 ##### Tracer 3D density profile (best fit) #####
@@ -408,8 +410,9 @@ plt.ylabel(r'Density [${\rm kpc}^{-3}$]',fontsize=myfontsize)
 
 plt.loglog()
 
-denbest = threeplumden(Rplot,p0best[0],p0best[1],p0best[2],\
-                         p0best[3],p0best[4],p0best[5])
+denbest = doublealpbetgamden(Rplot,p0best[0],p0best[1],p0best[2],p0best[3],\
+                             p0best[4],p0best[5],p0best[6],p0best[7],\
+                             p0best[8],p0best[9])
 plt.plot(Rplot,denbest,color='red',linewidth=2,label='Best fit')
 
 plt.axvline(x=Rhalf_int[0],color='blue',alpha=0.5,\
@@ -437,8 +440,9 @@ plt.ylabel(r'Normalised Mass',fontsize=myfontsize)
 
 plt.loglog()
 
-massbest = threeplummass(Rplot,p0best[0],p0best[1],p0best[2],\
-                         p0best[3],p0best[4],p0best[5])
+massbest = doublealpbetgammass(Rplot,p0best[0],p0best[1],p0best[2],p0best[3],\
+                               p0best[4],p0best[5],p0best[6],p0best[7],\
+                               p0best[8],p0best[9])
 plt.plot(Rplot,massbest,color='red',linewidth=2,label='Best fit')
 
 plt.axvline(x=Rhalf_int[0],color='blue',alpha=0.5,\

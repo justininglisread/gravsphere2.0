@@ -238,9 +238,10 @@ def velfit_easy(R,vz,vzerr,ms,Nbin,\
     #profile as compared to the velocity uncertainties.
     #This is usually fine, but something to bear in mind.
     ranal = np.logspace(-5,3,np.int(5e4))
-    surfden = threeplumsurf(ranal,p0best[0],p0best[1],p0best[2],\
-                            p0best[3],p0best[4],p0best[5])
-        
+    surfden = doublealpbetgamsurf_acc(ranal,p0best[0],p0best[1],p0best[2],\
+                                      p0best[3],p0best[4],p0best[5],p0best[6],\
+                                      p0best[7],p0best[8],p0best[9])
+
     #This assumes a flat or linearly falling relation
     #beyond the last data point:
     vsp1 = np.zeros(nsamples)
@@ -510,8 +511,9 @@ def velfit_full(R,vz,vzerr,ms,Nbin,Nbinarr,\
     #profile as compared to the velocity uncertainties.
     #This is usually fine, but something to bear in mind.
     ranal = np.logspace(-5,3,np.int(5e4))
-    surfden = threeplumsurf(ranal,p0best[0],p0best[1],p0best[2],\
-                            p0best[3],p0best[4],p0best[5])
+    surfden = doublealpbetgamsurf_acc(ranal,p0best[0],p0best[1],p0best[2],\
+                                      p0best[3],p0best[4],p0best[5],p0best[6],\
+                                      p0best[7],p0best[8],p0best[9])
 
     #This assumes a flat or linearly falling relation
     #beyond the last data point:
@@ -581,36 +583,24 @@ def velfitbin(vz,vzerr,ms,p0vin_min,p0vin_max,nsamples,nprocs):
     #Emcee parameters:
     nwalkers = 250
     nmodels = 2500
-
+    
     #Starting guess
-#    walkermode = 'safe'
-    walkermode = 'fast'
-
     ndims = len(p0vin_min)
     pos = np.zeros((nwalkers, ndims), dtype='float')
-                 
-    if (walkermode == 'safe'):
-        p0vin_startmin = p0vin_min
-        p0vin_startmax = p0vin_max    
-        for i in range(ndims):
-            pos[:,i] = np.random.uniform(p0vin_startmin[i],\
-                p0vin_startmax[i],nwalkers)
-    elif (walkermode == 'fast'):
-        for i in range(ndims):
-            poslow, poshigh = blobcalc(p0vin_min[i],p0vin_max[i])
-            pos[:,i] = np.random.uniform(poslow,poshigh,nwalkers)
+    for i in range(ndims):
+        poslow, poshigh = blobcalc(p0vin_min[i],p0vin_max[i])
+        pos[:,i] = np.random.uniform(poslow,poshigh,nwalkers)
 
-    #Run chains:
     with Pool(processes = nprocs) as pool:
         sampler = emcee.EnsembleSampler(nwalkers, ndims, lnprob_vel, \
-                    args=(vz, vzerr, ms, p0vin_min, p0vin_max), \
-                    pool=pool)
+                                        args=(vz, vzerr, ms, p0vin_min, p0vin_max), \
+                                        pool=pool)
         sampler.run_mcmc(pos, nmodels, progress = False)
-
+        
     #Extract results + errors:
     burn = np.int(0.75*nmodels)
     chisq = -2.0 * \
-            sampler.get_log_prob(discard=burn, flat=True)
+        sampler.get_log_prob(discard=burn, flat=True)
     par_test = sampler.get_chain(discard=burn, flat=True)
 
     #Store best fit model:

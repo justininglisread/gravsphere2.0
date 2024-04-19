@@ -388,7 +388,7 @@ def ocen_api(dgal_kpc,infile_phot,infile_kin,infile_prop):
 
 def ocenmock_api(data_file,verr,Nbin,axis):
     #Read in the data:
-    data = np.genfromtxt(data_file,dtype='f8')
+    data = np.genfromtxt(data_file,dtype='f8',skip_header=1)
 
     #Centre the data:
     comx = np.sum(data[:,0])/np.float(len(data[:,0]))
@@ -405,10 +405,10 @@ def ocenmock_api(data_file,verr,Nbin,axis):
     data[:,3] = data[:,3] - comvx
     data[:,4] = data[:,4] - comvy
     data[:,5] = data[:,5] - comvz
-    niter = 4
+    tol = 1.0e12
     spherer = 1.0
     spherer_in = spherer
-    for i in range(niter):
+    while (tol > 1.0e-4):
         sel = np.sqrt(data[:,0]**2.0+data[:,1]**2.0+data[:,2]**2.0) < spherer
         print('Refining on inner particles:', spherer)
         xuse = data[sel,0]
@@ -418,21 +418,27 @@ def ocenmock_api(data_file,verr,Nbin,axis):
         vyuse = data[sel,4]
         vzuse = data[sel,5]
         print('Max refine radius:', np.max(np.sqrt(xuse**2.0+yuse**2.0+zuse**2.0)))
+        comxold = comx
+        comyold = comy
+        comzold = comz
         comx = np.sum(xuse)/np.float(len(xuse))
         comy = np.sum(yuse)/np.float(len(yuse))
         comz = np.sum(zuse)/np.float(len(zuse))
         comvx = np.sum(vxuse)/np.float(len(vxuse))
         comvy = np.sum(vyuse)/np.float(len(vyuse))
         comvz = np.sum(vzuse)/np.float(len(vzuse))
+        tol = np.sqrt((comx-comxold)**2.0+(comy-comyold)**2.0+(comz-comzold)**2.0)/\
+              spherer_in
         print('Refined com:', comx,comy,comz)
-        print('Refined comv:', comvx,comvy,comvz)    
+        print('Refined comv:', comvx,comvy,comvz)
+        print('Tol:',tol)
         data[:,0] = data[:,0] - comx
         data[:,1] = data[:,1] - comy
         data[:,2] = data[:,2] - comz
         data[:,3] = data[:,3] - comvx
         data[:,4] = data[:,4] - comvy
         data[:,5] = data[:,5] - comvz
-        spherer = spherer * 0.5
+        spherer = spherer * 0.9
 
     #Set the project to be along x,y and/or z:
     #axis = 0 (x); axis = 1 (y); axis = 2 (z)
@@ -514,10 +520,8 @@ def ocenmock_api(data_file,verr,Nbin,axis):
     
     #Surface density [project along z]:
     R = np.sqrt(data[:,0]**2.0 + data[:,1]**2.0)
-    ms = data[:,6] / np.sum(data[:,6]) * np.float(len(data[:,6]))
+    ms = np.zeros(len(R)) + 1.0
     print('Total effective no. of tracers (photometric):', np.sum(ms))
-    print('Min/max stellar mass:', np.min(data[:,6]), np.max(data[:,6]))
-    print('Min/max tracer weight:', np.min(ms), np.max(ms))
     rbin, surfden, surfdenerr, Rhalf = \
           binthedata(R,ms,Nbin)
     print('Data Rhalf:', Rhalf)
@@ -541,3 +545,121 @@ def ocenmock_api(data_file,verr,Nbin,axis):
     
     return rbin, surfden, surfdenerr, Rhalf, Rkin, vz, vzerr, mskin, \
         x, y, vx, vxerr, vy, vyerr, msprop
+
+def retmock_api(data_file,verr,Nbin,axis):
+    #Load in the data:
+    import numpy as np
+    import h5py
+
+    hf = h5py.File(data_file,'r')
+    pos_stars = np.array(hf['pos_stars'])
+    vel_stars = np.array(hf['vel_stars'])
+    mass_stars = np.array(hf['mass_stars'])
+    pos_dm = np.array(hf['pos_dm'])
+    vel_dm = np.array(hf['vel_dm'])
+    mass_dm = np.array(hf['mass_dm'])
+    hf.close()
+
+    #Centre:
+    comx,comy,comz,comvx,comvy,comvz = \
+            find_centre(pos_stars,vel_stars,mass_stars)
+    pos_stars[:,0] = pos_stars[:,0] - comx
+    pos_stars[:,1] = pos_stars[:,1] - comy
+    pos_stars[:,2] = pos_stars[:,2] - comz
+    vel_stars[:,0] = vel_stars[:,0] - comvx
+    vel_stars[:,1] = vel_stars[:,1] - comvy
+    vel_stars[:,2] = vel_stars[:,2] - comvz
+    
+    #Set the project to be along x,y and/or z:
+    #axis = 0 (x); axis = 1 (y); axis = 2 (z)
+    pos_starsuse = pos_stars
+    vel_starsuse = vel_stars
+    if (axis == 0):
+        pos_starsuse[:,0] = pos_stars[:,2]
+        pos_starsuse[:,1] = pos_stars[:,1]
+        pos_starsuse[:,2] = pos_stars[:,0]
+        vel_starsuse[:,0] = vel_stars[:,2]
+        vel_starsuse[:,1] = vel_stars[:,1]
+        vel_starsuse[:,2] = vel_stars[:,0]
+    if (axis == 1):
+        pos_starsuse[:,0] = pos_stars[:,0]
+        pos_starsuse[:,1] = pos_stars[:,2]
+        pos_starsuse[:,2] = pos_stars[:,1]
+        vel_starsuse[:,0] = vel_stars[:,0]
+        vel_starsuse[:,1] = vel_stars[:,2]
+        vel_starsuse[:,2] = vel_stars[:,1]
+    pos_stars = pos_starsuse
+    vel_stars = vel_starsuse
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for axis in ['top','bottom','left','right']:
+        ax.spines[axis].set_linewidth(mylinewidth)
+    ax.minorticks_on()
+    ax.tick_params('both', length=10, width=2, which='major')
+    ax.tick_params('both', length=5, width=1, which='minor')
+    plt.xticks(fontsize=myfontsize)
+    plt.yticks(fontsize=myfontsize)
+    
+    plt.xlabel(r'x(kpc)',fontsize=myfontsize)
+    plt.ylabel(r'y(kpc)',fontsize=myfontsize)
+    
+    plt.plot(pos_stars[:,0],pos_stars[:,1],'ok',markersize=1)
+    plt.axhline(y=0)
+    plt.axvline(x=0)
+
+    plt.xlim([-1.5,1.5])
+    plt.ylim([-1.5,1.5])
+    plt.savefig('ret_cenr.png',bbox_inches='tight')
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for axis in ['top','bottom','left','right']:
+        ax.spines[axis].set_linewidth(mylinewidth)
+    ax.minorticks_on()
+    ax.tick_params('both', length=10, width=2, which='major')
+    ax.tick_params('both', length=5, width=1, which='minor')
+    plt.xticks(fontsize=myfontsize)
+    plt.yticks(fontsize=myfontsize)
+    
+    plt.xlabel(r'vx(km/s)',fontsize=myfontsize)
+    plt.ylabel(r'vy(km/s)',fontsize=myfontsize)
+    
+    plt.plot(vel_stars[:,0],vel_stars[:,1],'ok',markersize=1)
+    plt.axhline(y=0)
+    plt.axvline(x=0)
+    
+    plt.xlim([-30,30])
+    plt.ylim([-30,30])
+    plt.savefig('ret_cenv.png',bbox_inches='tight')
+    
+    #Surface density [project along z]:
+    R = np.sqrt(pos_stars[:,0]**2.0 + pos_stars[:,1]**2.0)
+    ms = mass_stars / np.sum(mass_stars) * len(mass_stars)
+    print('Total effective no. of tracers (photometric):', np.sum(ms))
+    rbin, surfden, surfdenerr, Rhalf = \
+                binthedata(R,ms,Nbin)
+    print('Data Rhalf:', Rhalf)
+    
+    Rkin = R
+    vz = vel_stars[:,2]
+    vzerr = np.zeros(len(vz)) + verr
+    vz = vz + np.random.normal(0.0, verr, len(vz))
+    mskin = ms
+    print('Total effective no. of tracers (kinematic):', np.sum(mskin))
+
+    x = pos_stars[:,0]
+    y = pos_stars[:,1]
+    vx = vel_stars[:,0]
+    vxerr = np.zeros(len(vx)) + verr
+    vy = vel_stars[:,1]
+    vyerr = np.zeros(len(vy)) + verr
+    msprop = ms
+    vx = vx + np.random.normal(0.0, verr, len(vx))
+    vy = vy + np.random.normal(0.0, verr, len(vy))
+    
+    return rbin, surfden, surfdenerr, Rhalf, Rkin, vz, vzerr, mskin, \
+        x, y, vx, vxerr, vy, vyerr, msprop
+
+    
+    

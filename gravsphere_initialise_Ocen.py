@@ -10,12 +10,12 @@ nprocs = 10
 
 #Data files and output base filename:
 whichgal = 'Ocen'
-whichcen = 'RenAnd'
+#whichcen = 'RenAnd'
 #whichcen = 'RenDisp'
 #whichcen = 'RenRot'
 #whichcen = 'RenNoy08'
-#whichcen = 'RenNoy10'
-dgal_kpc = 5.0
+whichcen = 'RenNoy10'
+dgal_kpc = 5.2
 infile = output_base+whichgal+'/dgal_%.1f/%s/' % (dgal_kpc,whichcen)+whichgal
 outdirbase = output_base+whichgal+'/dgal_%.1f/%s/' % (dgal_kpc,whichcen)
 print('Using Omega cen distance: %.1f kpc' % (dgal_kpc))
@@ -32,12 +32,13 @@ yMhigh = 1e9
 yrholow = 1e3
 yrhohigh = 1e12
 alp3sig = 0.0
-sigmlow = 1e-3
-sigmhigh = 5.0
 
 #Code options:
 propermotion = 'yes'
 virialshape = 'yes'
+
+if (whichgal == 'OcenMO'):
+    propermotion = 'no'
 
 #Overplot true solution (for mock data). If 
 #yes, then the true solutions should be passed
@@ -47,7 +48,7 @@ overtrue = 'no'
 
 #Radial grid range and smapling for Jeans calculation:
 rmin = 5.0e-6
-rmax = 1.0
+rmax = 5.0
 intpnts = np.int(250)
 
 #Galaxy properties. Assume here that the baryonic mass
@@ -58,30 +59,12 @@ intpnts = np.int(250)
 Mstar = 3.0e6
 Mstar_err = Mstar*0.75
 baryonmass_follows_tracer = 'yes'
-barrad_min = 1.0e-7
-barrad_max = 5.0
-bar_pnts = 5000
-
+nurad_min = 1.0e-6
+nurad_max = 10.0
+nu_pnts = np.int(1e4)
 
 ###########################################################
 #Priors
-
-#For surface density fit tracertol = [0,1] sets the spread 
-#around the best-fit value from the binulator.
-tracertol = 0.8
-
-#Cosmology priors on the coreNFWtides model. mWDM(keV) is
-#the mass of a thermal relic; <0 means CDM; sig_c200 is 
-#the scatter of c200 in log10 space. If the cosmo_cprior
-#is set, then we include a Gaussian spread in M200-c200 in
-#the likelihood. Without this, M200-c200 enters only if 
-#used to set the priors, below.
-cosmo_cprior = 'no'
-sig_c200 = 0.1
-mWDM = -1
-if (mWDM > 0):
-    cosmo_cfunc = lambda M200,h : \
-        cosmo_cfunc_WDM(M200,h,OmegaM,rhocrit,mWDM)
 
 #Velocity anisotropy priors. If logbetr0min=logbetr0max,
 #it will be set automatically based on the half light
@@ -89,52 +72,48 @@ if (mWDM > 0):
 logbetr0min = 0.0
 logbetr0max = 0.0
 betnmin = 1.0
-betnmax = 10.0
-bet0min = -1.0
-bet0max = 1.0
-betinfmin = -1.0
+betnmax = 5.0
+bet0min = -0.25
+bet0max = 0.25
+betinfmin = -0.25
 betinfmax = 1.0
 
-#CoreNFWtides priors:
-logM200low = 1.5
-logM200high = 10.5
-clow = 5.0
-chigh = 50.0
-rclow = 1e-3
-rchigh = 2.0
-logrclow = np.log10(rclow)
-logrchigh = np.log10(rchigh)
-nlow = 0.0
-nhigh = 1.0
+#Dark matter model priors:
+tSFlow = 13.8-12.0
+tSFhigh = 13.8-10.0
+M200abundlow = 1.0e7
+M200abundhigh = 5.0e10
+logM200low = np.log10(M200abundlow)
+logM200high = np.log10(M200abundhigh)
+nsig_c200low = -10.0
+nsig_c200high = 10.0
+logmWDMlow = np.log10(1.0e5)
+logmWDMhigh = np.log10(1.0e6)
+logsigmaSIlow = np.log10(1.0e-6)
+logsigmaSIhigh = np.log10(1.0e-5)
+mleftmax = 1.0
+mleftmin = 1.0e-6
+logmleftlow = np.log10(mleftmin)
+logmlefthigh = np.log10(mleftmax)
+mfaclow = 0.0
+mfachigh = 2.0
 
-#Use here Jacobi radius from:
-#https://ui.adsabs.harvard.edu/abs/2021MNRAS.507.1127K/abstract
-rtlow = 160.0 / 1000.0
-rthigh = 200.0 / 1000.0
-logrtlow = np.log10(rtlow)
-logrthigh = np.log10(rthigh)
-dellow = 3.1
-delhigh = 5.0
-
-if (cosmo_cprior == 'yes'):
-    clow = 1.0
-    chigh = 100.0
-else:
-    #Don't use priors on tidal radius:
-    rtlow = 160.0 / 1000.0
-    rthigh = 10.0
-    logrtlow = np.log10(rtlow)
-    logrthigh = np.log10(rthigh)
-    dellow = 3.1
-    delhigh = 5.0
+#Infall redshift fixed by tSF. For
+#isolated galaxies that are star forming today
+#this should be a tight prior around zin=0.
+#[cosmological parameters set in constants.py]
+zinlow = redshift_from_time(tSFhigh,OmegaM,OmegaL,h)
+zinhigh = redshift_from_time(tSFlow,OmegaM,OmegaL,h)
+print('Redshift of infall based on tSF:', \
+      zinlow, zinhigh)
 
 #Priors on central dark mass [set logMcenlow/high very negative
 #to switch this off. Mcen is the mass in Msun; acen is the
 #scale length in kpc, usually assumed smaller than Rhalf
 #to avoid degeneracies with the stellar mass]:
-logMcenlow = 1.0
-logMcenhigh = 6.0
-logacenlow = -12.0
+logMcenlow = 1.5
+logMcenhigh = 5.5
+logacenlow = -6.0
 logacenhigh = -3.5
 
 #Priors on rotation [set Arotlow = Arothigh = 0 to switch off.
